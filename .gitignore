@@ -57,7 +57,7 @@ build/
 
 # Misc
 *.log
-pubspec.lock
+# pubspec.lock should be committed for apps (not libraries)
 
 # Windows build
 windows/flutter/generated_plugin_registrant.cc

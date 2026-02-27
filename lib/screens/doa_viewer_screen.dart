@@ -70,7 +70,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
           // Page indicator
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            color: const Color(0xFF1B5E20).withOpacity(0.08),
+            color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
@@ -92,7 +92,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                           borderRadius: BorderRadius.circular(4),
                           color: i == _currentIndex
                               ? const Color(0xFF1B5E20)
-                              : const Color(0xFF1B5E20).withOpacity(0.3),
+                              : const Color(0xFF1B5E20).withValues(alpha: 0.3),
                         ),
                       ),
               ),
@@ -181,7 +181,7 @@ class _DoaPage extends StatelessWidget {
               height: 160,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFF1B5E20).withOpacity(0.08),
+                color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
@@ -235,7 +235,7 @@ class _NavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -4)),
         ],
       ),
       child: SafeArea(

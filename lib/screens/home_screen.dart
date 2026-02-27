@@ -104,14 +104,14 @@ class _HeaderBanner extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(Icons.mosque, color: Colors.white, size: 48),
-          const SizedBox(width: 16),
+          Icon(Icons.mosque, color: Colors.white, size: 48),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   'Selamat Datang',
                   style: TextStyle(color: Colors.white70, fontSize: 14),
@@ -322,7 +322,7 @@ class _FlowStepTile extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: const Color(0xFF1B5E20).withOpacity(0.3),
+                      color: const Color(0xFF1B5E20).withValues(alpha: 0.3),
                     ),
                   ),
               ],

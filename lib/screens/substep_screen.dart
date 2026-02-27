@@ -97,10 +97,10 @@ class _DoaTile extends StatelessWidget {
                     Row(
                       children: [
                         if (doa.imagePath != null)
-                          _Badge(icon: Icons.image_outlined, label: 'Gambar'),
+                          const _Badge(icon: Icons.image_outlined, label: 'Gambar'),
                         if (hasAudio) ...[
                           if (doa.imagePath != null) const SizedBox(width: 6),
-                          _Badge(icon: Icons.volume_up_outlined, label: 'Audio'),
+                          const _Badge(icon: Icons.volume_up_outlined, label: 'Audio'),
                         ],
                       ],
                     ),
@@ -128,7 +128,7 @@ class _DoaTile extends StatelessWidget {
     return Container(
       width: 72,
       height: 72,
-      color: const Color(0xFF1B5E20).withOpacity(0.1),
+      color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
       child: const Icon(Icons.menu_book, color: Color(0xFF1B5E20), size: 36),
     );
   }
@@ -145,7 +145,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B5E20).withOpacity(0.1),
+        color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

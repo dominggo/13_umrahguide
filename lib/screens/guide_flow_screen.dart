@@ -80,7 +80,7 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
           // Step & substep header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: const Color(0xFF1B5E20).withOpacity(0.08),
+            color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
             child: Row(
               children: [
                 Container(
@@ -194,7 +194,7 @@ class _SingleDoaView extends StatelessWidget {
                 height: 160,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B5E20).withOpacity(0.08),
+                  color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Center(
@@ -282,7 +282,7 @@ class _FlowNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -4)),
         ],
       ),
       child: SafeArea(

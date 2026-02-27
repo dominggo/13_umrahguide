@@ -1,0 +1,9 @@
+<br/>
+<p><u><b><font color='green'>Rukun Umrah</font></b></u><br /></p>
+<br/> 
+<table width="100%" height="100%">
+  <tr>
+    <td align="center" valign="middle"><img src="rukun_umrah" /></td>
+  </tr>
+</table>
+<br/>

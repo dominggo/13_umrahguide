@@ -1,7 +1,85 @@
+// ════════════════════════════════════════════════════════════════════════════
+// CONTENT EDITING GUIDE — umrah_data.dart
+// ════════════════════════════════════════════════════════════════════════════
+//
+// DATA HIERARCHY (3 levels):
+//
+//   UmrahStep          — one of the 8 main Umrah rituals (e.g. Ihram, Tawaf)
+//     └── UmrahSubStep — a named sub-section within a step (e.g. Pusingan 1)
+//           └── DoaItem  — one individual doa/prayer card shown to the user
+//
+// ─── UmrahStep fields ────────────────────────────────────────────────────────
+//   id:       unique string key (used for bookmarks, progress, GPS tracking)
+//   title:    shown in the grid card and AppBar (Malay)
+//   subtitle: one-line description shown below the title card
+//   icon:     asset path for the step icon image (assets/images/...)
+//   textFile: optional text guide file in assets/text/ (HTML-formatted Malay)
+//   subSteps: list of UmrahSubStep — at least one required
+//
+// ─── UmrahSubStep fields ─────────────────────────────────────────────────────
+//   id:    unique key within the step — must be snake_case
+//         Tawaf rounds MUST use format: tawaf_1 … tawaf_7
+//         Sa'ie rounds MUST use format: saie_1  … saie_7
+//         (The app uses these ids to drive the round-completion tracking UI)
+//   title: shown in the SubStep screen list and GuideFlow header
+//   duas:  list of DoaItem — can be empty [] but try to include at least one
+//
+// ─── DoaItem fields ──────────────────────────────────────────────────────────
+//   title:       doa name shown as heading and in search results
+//   imagePath:   path to the doa image PNG (null → shows a placeholder icon)
+//                Convention: 'assets/images/doa/<name>.png'
+//   audioPath:   path to the audio file (null → "Tiada audio" shown)
+//                Convention: 'assets/audio/<name>.ogg'  (some .mp3 also exist)
+//   description: optional short description/transliteration shown below image
+//   autoPlay:    (default true) if false, audio auto-chain stops at this doa;
+//               the user must tap Play manually — use as a deliberate pause/
+//               break-point between thematic groups of duas
+//
+// ─── HOW TO EDIT CONTENT ─────────────────────────────────────────────────────
+//
+//  ADD a new doa:  insert a new DoaItem(…) into any duas: [] list
+//  REMOVE a doa:   delete the DoaItem(…) line (and its trailing comma)
+//  REORDER duas:   cut and paste DoaItem entries within the same list
+//  EDIT a doa:     change its title/imagePath/audioPath/description fields
+//
+//  ADD a new substep:
+//    Insert a new UmrahSubStep(id: '…', title: '…', duas: […]) into the
+//    subSteps: [] list of the relevant UmrahStep.
+//
+//  ADD a new step:
+//    Append a new UmrahStep(…) to the umrahSteps list below, then also add
+//    an entry in the _stepColors and _stepIcons arrays in home_screen.dart.
+//
+// ─── ASSET PATH CONVENTIONS ──────────────────────────────────────────────────
+//   Doa images:       assets/images/doa/<name>.png
+//   Step icons:       assets/images/misc/<name>.png  OR  locations/<name>.jpg
+//   Overview images:  assets/images/overview/<name>.png
+//   Location photos:  assets/images/locations/<name>.jpg
+//   Audio files:      assets/audio/<name>.ogg  (preferred) or .mp3
+//   Text guides:      assets/text/<name>.txt   (HTML-formatted Malay)
+//
+//   Any new file must also be in pubspec.yaml under flutter.assets!
+//   New folders need a new entry; existing folder entries cover all files.
+//
+// ─── List.generate() PATTERN (used for Tawaf Wida') ─────────────────────────
+//   When a substep has many sequentially-named files, use List.generate():
+//
+//     duas: List.generate(
+//       27,  // total count
+//       (i) => DoaItem(
+//         title: 'Doa Tawaf Wida\' ${i + 1}',
+//         imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_${i + 1}.png',
+//         audioPath: 'assets/audio/doa_ketika_tawaf_wada_${i + 1}.ogg',
+//       ),
+//     ),
+//
+//   NOTE: DoaItem inside List.generate must NOT have the 'const' keyword.
+// ════════════════════════════════════════════════════════════════════════════
+
 import '../models/umrah_step.dart';
 
 final List<UmrahStep> umrahSteps = [
-  // ─── 1. IHRAM ───────────────────────────────────────────────────────────────
+  // ════════ STEP 1: IHRAM ════════
   const UmrahStep(
     id: 'ihram',
     title: 'Ihram',
@@ -10,13 +88,14 @@ final List<UmrahStep> umrahSteps = [
     textFile: 'adab_ihram.txt',
     subSteps: [
       const UmrahSubStep(
-        id: 'mandi_ihram',
-        title: 'Mandi Sunat Ihram',
+        id: 'mandi_ihram',         // unique id within this step
+        title: 'Mandi Sunat Ihram', // shown in substep list and guided flow
         duas: [
           const DoaItem(
-            title: 'Niat Mandi Ihram',
-            imagePath: 'assets/images/misc/niat_miqat.png',
-            audioPath: 'assets/audio/niat_mandi_ihram.ogg',
+            title: 'Niat Mandi Ihram',                     // heading shown to user
+            imagePath: 'assets/images/misc/niat_miqat.png', // null → show placeholder
+            audioPath: 'assets/audio/niat_mandi_ihram.ogg', // null → "Tiada audio"
+            // autoPlay: true,  // default; set false for a manual break-point
           ),
         ],
       ),
@@ -65,7 +144,7 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 2. MASUK MAKKAH ────────────────────────────────────────────────────────
+  // ════════ STEP 2: MASUK KOTA MAKKAH ════════
   const UmrahStep(
     id: 'masuk_makkah',
     title: 'Masuk Kota Makkah',
@@ -86,7 +165,7 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 3. MELIHAT KAABAH ──────────────────────────────────────────────────────
+  // ════════ STEP 3: MELIHAT KA'ABAH ════════
   const UmrahStep(
     id: 'melihat_kaabah',
     title: 'Melihat Ka\'abah',
@@ -114,7 +193,7 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 4. TAWAF ───────────────────────────────────────────────────────────────
+  // ════════ STEP 4: TAWAF (7 Pusingan + Hijir Ismail) ════════
   const UmrahStep(
     id: 'tawaf',
     title: 'Tawaf',
@@ -211,7 +290,7 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 5. SOLAT SUNAT TAWAF ───────────────────────────────────────────────────
+  // ════════ STEP 5: SOLAT SUNAT TAWAF ════════
   const UmrahStep(
     id: 'solat_tawaf',
     title: 'Solat Sunat Tawaf',
@@ -255,7 +334,7 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 6. SAIE ────────────────────────────────────────────────────────────────
+  // ════════ STEP 6: SA'IE (7 kali Safa–Marwah) ════════
   const UmrahStep(
     id: 'saie',
     title: 'Sa\'ie',
@@ -341,7 +420,7 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 7. TAHALLUL ────────────────────────────────────────────────────────────
+  // ════════ STEP 7: TAHALLUL ════════
   const UmrahStep(
     id: 'tahallul',
     title: 'Tahallul',
@@ -362,8 +441,9 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 
-  // ─── 8. TAWAF WIDA ──────────────────────────────────────────────────────────
-  const UmrahStep(
+  // ════════ STEP 8: TAWAF WIDA' (Tawaf Selamat Tinggal) ════════
+  // Note: cannot be const because duas uses List.generate()
+  UmrahStep(
     id: 'tawaf_wida',
     title: 'Tawaf Wida\'',
     subtitle: 'Tawaf Selamat Tinggal',
@@ -376,7 +456,7 @@ final List<UmrahStep> umrahSteps = [
           const DoaItem(title: 'Niat Tawaf Wida\'', audioPath: 'assets/audio/niat_tawaf_wida.ogg'),
         ],
       ),
-      const UmrahSubStep(
+      UmrahSubStep(
         id: 'doa_tawaf_wida',
         title: 'Doa Ketika Tawaf Wida\'',
         duas: List.generate(

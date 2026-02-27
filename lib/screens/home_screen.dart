@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
+import '../models/bookmark_provider.dart';
+import '../models/progress_provider.dart';
 import 'step_detail_screen.dart';
 import 'guide_flow_screen.dart';
+import 'search_screen.dart';
+import 'makkah_map_screen.dart';
+import 'journey_screen.dart';
+import 'journey_history_screen.dart';
+import 'doa_viewer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +22,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTab = 0;
 
+  static const _tabs = [
+    _MenuTab(),
+    _GuideFlowTab(),
+    _BookmarksTab(),
+    MakkahMapScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,13 +36,26 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Panduan Umrah'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Cari Doa',
+            onPressed: () => showSearch(context: context, delegate: UmrahSearchDelegate()),
+          ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Sejarah Umrah',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const JourneyHistoryScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.info_outline),
             tooltip: 'Tentang',
             onPressed: () => _showAbout(context),
           ),
         ],
       ),
-      body: _selectedTab == 0 ? const _MenuTab() : const _GuideFlowTab(),
+      body: _tabs[_selectedTab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedTab,
         onDestinationSelected: (i) => setState(() => _selectedTab = i),
@@ -41,6 +69,16 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.directions_walk_outlined),
             selectedIcon: Icon(Icons.directions_walk),
             label: 'Panduan Aliran',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bookmark_outline),
+            selectedIcon: Icon(Icons.bookmark),
+            label: 'Simpan',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            label: 'Peta',
           ),
         ],
       ),
@@ -60,6 +98,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ─── Menu Tab ────────────────────────────────────────────────────────────────
+
 class _MenuTab extends StatelessWidget {
   const _MenuTab();
 
@@ -67,9 +107,9 @@ class _MenuTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: _HeaderBanner(),
-        ),
+        SliverToBoxAdapter(child: _HeaderBanner()),
+        // "Masuk ke Masjid" card
+        const SliverToBoxAdapter(child: _JourneyStartCard()),
         SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverGrid(
@@ -86,6 +126,52 @@ class _MenuTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _JourneyStartCard extends StatelessWidget {
+  const _JourneyStartCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Card(
+        color: const Color(0xFF1B5E20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const JourneyScreen()),
+          ),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Icon(Icons.mosque, color: Colors.white, size: 28),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Masuk ke Masjid untuk Mulakan Tawaf',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      Text(
+                        'Pantau perjalanan umrah anda secara langsung',
+                        style: TextStyle(color: Colors.white70, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -222,11 +308,15 @@ class _StepCard extends StatelessWidget {
   }
 }
 
+// ─── Guide Flow Tab ───────────────────────────────────────────────────────────
+
 class _GuideFlowTab extends StatelessWidget {
   const _GuideFlowTab();
 
   @override
   Widget build(BuildContext context) {
+    final prog = context.watch<ProgressProvider>();
+
     return Column(
       children: [
         Container(
@@ -245,6 +335,54 @@ class _GuideFlowTab extends StatelessWidget {
             ],
           ),
         ),
+
+        // Resume banner
+        if (prog.hasSavedProgress)
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => GuideFlowScreen(
+                  steps: umrahSteps,
+                  initialStepIndex: prog.stepIndex,
+                  initialSubStepIndex: prog.subStepIndex,
+                ),
+              ),
+            ),
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF1B5E20)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.play_circle, color: Color(0xFF1B5E20)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Sambung Semula',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
+                        ),
+                        Text(
+                          'Langkah ${prog.stepIndex + 1}: ${umrahSteps[prog.stepIndex].title}',
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF1B5E20)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF1B5E20)),
+                ],
+              ),
+            ),
+          ),
+
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -299,7 +437,6 @@ class _FlowStepTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Timeline column
           SizedBox(
             width: 40,
             child: Column(
@@ -350,4 +487,132 @@ class _FlowStepTile extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Bookmarks Tab ────────────────────────────────────────────────────────────
+
+class _BookmarksTab extends StatelessWidget {
+  const _BookmarksTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final bm = context.watch<BookmarkProvider>();
+    final keys = bm.bookmarks.toList();
+
+    if (keys.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.bookmark_outline, size: 64, color: Colors.grey),
+            SizedBox(height: 12),
+            Text('Belum ada doa yang disimpan', style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 4),
+            Text(
+              'Ketuk ikon bookmark pada mana-mana doa untuk menyimpannya',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Group by step name
+    final grouped = <String, List<_BookmarkEntry>>{};
+    for (final key in keys) {
+      final parts = key.split('__');
+      if (parts.length < 3) continue;
+      final stepId = parts[0];
+      final substepId = parts[1];
+      final doaTitle = parts[2];
+
+      // Find the matching step, substep, and doa
+      for (final step in umrahSteps) {
+        if (step.id != stepId) continue;
+        for (final sub in step.subSteps) {
+          if (sub.id != substepId) continue;
+          for (int i = 0; i < sub.duas.length; i++) {
+            if (sub.duas[i].title == doaTitle) {
+              grouped.putIfAbsent(step.title, () => []).add(_BookmarkEntry(
+                doa: sub.duas[i],
+                index: i,
+                siblings: sub.duas,
+                substepTitle: sub.title,
+                key: key,
+              ));
+            }
+          }
+        }
+      }
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: grouped.entries.map((entry) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Text(
+                entry.key,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1B5E20)),
+              ),
+            ),
+            ...entry.value.map((bEntry) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: bEntry.doa.imagePath != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.asset(
+                              bEntry.doa.imagePath!,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.menu_book, size: 36, color: Color(0xFF1B5E20)),
+                            ),
+                          )
+                        : const Icon(Icons.menu_book, color: Color(0xFF1B5E20)),
+                    title: Text(bEntry.doa.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    subtitle: Text(bEntry.substepTitle, style: const TextStyle(fontSize: 11)),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.bookmark, color: Color(0xFF1B5E20)),
+                      onPressed: () => bm.toggle(bEntry.key),
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DoaViewerScreen(
+                          duas: bEntry.siblings,
+                          initialIndex: bEntry.index,
+                          title: bEntry.substepTitle,
+                        ),
+                      ),
+                    ),
+                  ),
+                )),
+          ],
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _BookmarkEntry {
+  final DoaItem doa;
+  final int index;
+  final List<DoaItem> siblings;
+  final String substepTitle;
+  final String key;
+
+  const _BookmarkEntry({
+    required this.doa,
+    required this.index,
+    required this.siblings,
+    required this.substepTitle,
+    required this.key,
+  });
 }

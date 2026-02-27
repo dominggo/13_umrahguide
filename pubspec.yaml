@@ -14,6 +14,22 @@ dependencies:
   shared_preferences: ^2.2.3
   provider: ^6.1.2
   cupertino_icons: ^1.0.8
+  # Map & location
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  flutter_map_cache: ^1.5.0
+  dio_cache_interceptor: ^3.5.1
+  dio: ^5.4.3
+  geolocator: ^13.0.1
+  path_provider: ^2.1.4
+  connectivity_plus: ^6.0.5
+  # Export & share
+  share_plus: ^10.0.0
+  pdf: ^3.10.8
+  printing: ^5.12.0
+  screenshot: ^3.0.0
+  # UUID generation
+  uuid: ^4.4.0
 
 dev_dependencies:
   flutter_test:

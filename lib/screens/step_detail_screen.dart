@@ -63,7 +63,7 @@ class StepDetailScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => SubStepScreen(subStep: sub, stepTitle: step.title),
+                      builder: (_) => SubStepScreen(subStep: sub, stepTitle: step.title, stepId: step.id),
                     ),
                   ),
                 );

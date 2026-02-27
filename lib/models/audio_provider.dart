@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -6,8 +7,14 @@ class AudioProvider extends ChangeNotifier {
   String? _currentPath;
   bool _isPlaying = false;
 
+  final StreamController<void> _trackCompleteController =
+      StreamController<void>.broadcast();
+
   bool get isPlaying => _isPlaying;
   String? get currentPath => _currentPath;
+
+  /// Fires once whenever the current track finishes playing naturally.
+  Stream<void> get onTrackComplete => _trackCompleteController.stream;
 
   AudioProvider() {
     _player.playerStateStream.listen((state) {
@@ -15,6 +22,7 @@ class AudioProvider extends ChangeNotifier {
       if (state.processingState == ProcessingState.completed) {
         _isPlaying = false;
         _currentPath = null;
+        _trackCompleteController.add(null);
       }
       notifyListeners();
     });
@@ -43,6 +51,7 @@ class AudioProvider extends ChangeNotifier {
   @override
   void dispose() {
     _player.dispose();
+    _trackCompleteController.close();
     super.dispose();
   }
 }

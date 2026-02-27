@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/audio_provider.dart';
+import 'models/bookmark_provider.dart';
+import 'models/progress_provider.dart';
+import 'models/location_provider.dart';
+import 'models/journey_history_provider.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -12,8 +16,14 @@ class UmrahGuideApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AudioProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AudioProvider()),
+        ChangeNotifierProvider(create: (_) => BookmarkProvider()),
+        ChangeNotifierProvider(create: (_) => ProgressProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => JourneyHistoryProvider()),
+      ],
       child: MaterialApp(
         title: 'Panduan Umrah',
         debugShowCheckedModeBanner: false,

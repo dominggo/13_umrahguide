@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
+import '../models/bookmark_provider.dart';
 import 'doa_viewer_screen.dart';
 
 class SubStepScreen extends StatelessWidget {
   final UmrahSubStep subStep;
   final String stepTitle;
+  final String stepId;
 
-  const SubStepScreen({super.key, required this.subStep, required this.stepTitle});
+  const SubStepScreen({
+    super.key,
+    required this.subStep,
+    required this.stepTitle,
+    required this.stepId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +30,8 @@ class SubStepScreen extends StatelessWidget {
           return _DoaTile(
             doa: doa,
             index: index,
+            stepId: stepId,
+            substepId: subStep.id,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -30,6 +39,8 @@ class SubStepScreen extends StatelessWidget {
                   duas: subStep.duas,
                   initialIndex: index,
                   title: subStep.title,
+                  stepId: stepId,
+                  substepId: subStep.id,
                 ),
               ),
             ),
@@ -43,15 +54,25 @@ class SubStepScreen extends StatelessWidget {
 class _DoaTile extends StatelessWidget {
   final DoaItem doa;
   final int index;
+  final String stepId;
+  final String substepId;
   final VoidCallback onTap;
 
-  const _DoaTile({required this.doa, required this.index, required this.onTap});
+  const _DoaTile({
+    required this.doa,
+    required this.index,
+    required this.stepId,
+    required this.substepId,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final audio = context.watch<AudioProvider>();
+    final bm = context.watch<BookmarkProvider>();
     final hasAudio = doa.audioPath != null;
     final isPlaying = hasAudio && audio.isCurrentlyPlaying(doa.audioPath!);
+    final bmKey = BookmarkProvider.keyFor(stepId, substepId, doa.title);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -106,6 +127,15 @@ class _DoaTile extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              // Bookmark icon
+              IconButton(
+                icon: Icon(
+                  bm.isBookmarked(bmKey) ? Icons.bookmark : Icons.bookmark_border,
+                  color: bm.isBookmarked(bmKey) ? const Color(0xFF1B5E20) : Colors.grey,
+                  size: 22,
+                ),
+                onPressed: () => bm.toggle(bmKey),
               ),
               // Quick audio play button
               if (hasAudio)

@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/umrah_step.dart';
+import '../models/progress_provider.dart';
 import 'doa_viewer_screen.dart';
 
 /// Full guided flow - walks user step by step through all Umrah stages
 class GuideFlowScreen extends StatefulWidget {
   final List<UmrahStep> steps;
   final int initialStepIndex;
+  final int initialSubStepIndex;
 
   const GuideFlowScreen({
     super.key,
     required this.steps,
-    required this.initialStepIndex,
+    this.initialStepIndex = 0,
+    this.initialSubStepIndex = 0,
   });
 
   @override
@@ -25,7 +29,9 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
   void initState() {
     super.initState();
     _stepIndex = widget.initialStepIndex;
-    _subStepIndex = 0;
+    _subStepIndex = widget.initialSubStepIndex;
+    // Save progress on init
+    WidgetsBinding.instance.addPostFrameCallback((_) => _saveProgress());
   }
 
   UmrahStep get _currentStep => widget.steps[_stepIndex];
@@ -36,7 +42,31 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
       _subStepIndex < _currentStep.subSteps.length - 1 ||
       _stepIndex < widget.steps.length - 1;
 
-  void _goNext() {
+  Future<void> _saveProgress() async {
+    await context.read<ProgressProvider>().saveProgress(_stepIndex, _subStepIndex);
+  }
+
+  /// Returns round prefix + number if current substep is a Tawaf/Sa'ie round
+  (String?, int?) _getRoundInfo() {
+    final subId = _currentSubStep.id;
+    if (subId.startsWith('tawaf_pusingan_') || subId.startsWith('tawaf_round_')) {
+      final num = int.tryParse(subId.split('_').last);
+      return ('tawaf', num);
+    }
+    if (subId.startsWith('saie_') && !subId.contains('doa')) {
+      final num = int.tryParse(subId.split('_').last);
+      if (num != null && num >= 1 && num <= 7) return ('saie', num);
+    }
+    return (null, null);
+  }
+
+  Future<void> _goNext() async {
+    // Check round completion before leaving a Tawaf/Sa'ie substep
+    final (prefix, num) = _getRoundInfo();
+    if (prefix != null && num != null) {
+      await _checkRoundCompletion(prefix, num);
+    }
+
     setState(() {
       if (_subStepIndex < _currentStep.subSteps.length - 1) {
         _subStepIndex++;
@@ -45,9 +75,10 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
         _subStepIndex = 0;
       }
     });
+    await _saveProgress();
   }
 
-  void _goPrev() {
+  Future<void> _goPrev() async {
     setState(() {
       if (_subStepIndex > 0) {
         _subStepIndex--;
@@ -56,16 +87,60 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
         _subStepIndex = widget.steps[_stepIndex].subSteps.length - 1;
       }
     });
+    await _saveProgress();
+  }
+
+  Future<void> _checkRoundCompletion(String prefix, int num) async {
+    if (!mounted) return;
+    final prog = context.read<ProgressProvider>();
+    final key = '${prefix}_$num';
+    if (prog.isRoundComplete(key)) return;
+
+    final label = prefix == 'tawaf' ? 'Tawaf Pusingan $num' : "Sa'ie Ke-$num";
+    final question = prefix == 'tawaf'
+        ? 'Adakah anda telah melengkapkan tawaf pusingan $num?'
+        : "Adakah anda telah melengkapkan sa'ie ke-$num?";
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(label),
+        content: Text(question),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ya')),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      await prog.confirmRound(key);
+    } else {
+      await prog.skipRound(key);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final totalSteps = widget.steps.length;
     final progress = (_stepIndex + (_subStepIndex + 1) / _currentStep.subSteps.length) / totalSteps;
+    final prog = context.watch<ProgressProvider>();
+
+    // Round info for indicator
+    final (roundPrefix, roundNum) = _getRoundInfo();
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_currentStep.title),
+        actions: [
+          // Round indicator if applicable
+          if (roundPrefix != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: _RoundIndicator(prefix: roundPrefix, total: 7, prog: prog),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
           child: LinearProgressIndicator(
@@ -111,10 +186,20 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
             child: _currentSubStep.duas.isEmpty
                 ? const Center(child: Text('Tiada doa untuk bahagian ini'))
                 : _currentSubStep.duas.length == 1
-                    ? _SingleDoaView(doa: _currentSubStep.duas.first)
+                    ? _SingleDoaView(
+                        doa: _currentSubStep.duas.first,
+                        stepId: _currentStep.id,
+                        substepId: _currentSubStep.id,
+                        roundPrefix: roundPrefix,
+                        roundNumber: roundNum,
+                      )
                     : _DoaListView(
                         duas: _currentSubStep.duas,
                         subStepTitle: _currentSubStep.title,
+                        stepId: _currentStep.id,
+                        substepId: _currentSubStep.id,
+                        roundPrefix: roundPrefix,
+                        roundNumber: roundNum,
                       ),
           ),
 
@@ -124,7 +209,6 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
             hasNext: _hasNext,
             onPrev: _goPrev,
             onNext: _goNext,
-            stepTitle: _currentStep.title,
             isLastStep: !_hasNext,
           ),
         ],
@@ -133,9 +217,48 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
   }
 }
 
+class _RoundIndicator extends StatelessWidget {
+  final String prefix;
+  final int total;
+  final ProgressProvider prog;
+
+  const _RoundIndicator({required this.prefix, required this.total, required this.prog});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(total, (i) {
+        final key = '${prefix}_${i + 1}';
+        final status = prog.getRoundStatus(key);
+        final color = status == RoundStatus.confirmed
+            ? Colors.white
+            : status == RoundStatus.skipped
+                ? Colors.orange
+                : Colors.white30;
+        return Padding(
+          padding: const EdgeInsets.only(right: 3),
+          child: CircleAvatar(backgroundColor: color, radius: 4),
+        );
+      }),
+    );
+  }
+}
+
 class _SingleDoaView extends StatelessWidget {
   final DoaItem doa;
-  const _SingleDoaView({required this.doa});
+  final String stepId;
+  final String substepId;
+  final String? roundPrefix;
+  final int? roundNumber;
+
+  const _SingleDoaView({
+    required this.doa,
+    required this.stepId,
+    required this.substepId,
+    this.roundPrefix,
+    this.roundNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +266,15 @@ class _SingleDoaView extends StatelessWidget {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => DoaViewerScreen(duas: [doa], initialIndex: 0, title: doa.title),
+          builder: (_) => DoaViewerScreen(
+            duas: [doa],
+            initialIndex: 0,
+            title: doa.title,
+            stepId: stepId,
+            substepId: substepId,
+            roundPrefix: roundPrefix,
+            roundNumber: roundNumber,
+          ),
         ),
       ),
       child: SingleChildScrollView(
@@ -164,7 +295,9 @@ class _SingleDoaView extends StatelessWidget {
                       errorBuilder: (_, __, ___) => Container(
                         height: 200,
                         color: Colors.grey[100],
-                        child: const Center(child: Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.grey)),
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.grey),
+                        ),
                       ),
                     ),
                     Positioned(
@@ -217,8 +350,19 @@ class _SingleDoaView extends StatelessWidget {
 class _DoaListView extends StatelessWidget {
   final List<DoaItem> duas;
   final String subStepTitle;
+  final String stepId;
+  final String substepId;
+  final String? roundPrefix;
+  final int? roundNumber;
 
-  const _DoaListView({required this.duas, required this.subStepTitle});
+  const _DoaListView({
+    required this.duas,
+    required this.subStepTitle,
+    required this.stepId,
+    required this.substepId,
+    this.roundPrefix,
+    this.roundNumber,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +383,8 @@ class _DoaListView extends StatelessWidget {
                       width: 52,
                       height: 52,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.menu_book, size: 36, color: Color(0xFF1B5E20)),
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.menu_book, size: 36, color: Color(0xFF1B5E20)),
                     ),
                   )
                 : const Icon(Icons.menu_book, size: 36, color: Color(0xFF1B5E20)),
@@ -248,7 +393,15 @@ class _DoaListView extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => DoaViewerScreen(duas: duas, initialIndex: i, title: subStepTitle),
+                builder: (_) => DoaViewerScreen(
+                  duas: duas,
+                  initialIndex: i,
+                  title: subStepTitle,
+                  stepId: stepId,
+                  substepId: substepId,
+                  roundPrefix: roundPrefix,
+                  roundNumber: roundNumber,
+                ),
               ),
             ),
           ),
@@ -263,7 +416,6 @@ class _FlowNavBar extends StatelessWidget {
   final bool hasNext;
   final VoidCallback onPrev;
   final VoidCallback onNext;
-  final String stepTitle;
   final bool isLastStep;
 
   const _FlowNavBar({
@@ -271,7 +423,6 @@ class _FlowNavBar extends StatelessWidget {
     required this.hasNext,
     required this.onPrev,
     required this.onNext,
-    required this.stepTitle,
     required this.isLastStep,
   });
 
@@ -299,7 +450,7 @@ class _FlowNavBar extends StatelessWidget {
             Expanded(
               child: Center(
                 child: isLastStep
-                    ? const Text('Tahniah! Umrah Selesai 🕌', style: TextStyle(fontWeight: FontWeight.bold))
+                    ? const Text('Tahniah! Umrah Selesai', style: TextStyle(fontWeight: FontWeight.bold))
                     : const Text('Seterusnya', style: TextStyle(color: Colors.grey)),
               ),
             ),

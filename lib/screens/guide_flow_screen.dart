@@ -49,10 +49,17 @@ class _GuideFlowScreenState extends State<GuideFlowScreen> {
   /// Returns round prefix + number if current substep is a Tawaf/Sa'ie round
   (String?, int?) _getRoundInfo() {
     final subId = _currentSubStep.id;
-    if (subId.startsWith('tawaf_pusingan_') || subId.startsWith('tawaf_round_')) {
+    // Tawaf Wida' rounds: tawaf_wida_1 … tawaf_wida_7 (check before tawaf_)
+    if (subId.startsWith('tawaf_wida_')) {
       final num = int.tryParse(subId.split('_').last);
-      return ('tawaf', num);
+      if (num != null && num >= 1 && num <= 7) return ('tawaf_wida', num);
     }
+    // Tawaf rounds: tawaf_1 … tawaf_7
+    if (subId.startsWith('tawaf_')) {
+      final num = int.tryParse(subId.split('_').last);
+      if (num != null && num >= 1 && num <= 7) return ('tawaf', num);
+    }
+    // Sa'ie rounds: saie_1 … saie_7
     if (subId.startsWith('saie_') && !subId.contains('doa')) {
       final num = int.tryParse(subId.split('_').last);
       if (num != null && num >= 1 && num <= 7) return ('saie', num);

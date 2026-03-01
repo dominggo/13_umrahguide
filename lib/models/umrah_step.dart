@@ -33,6 +33,7 @@ class DoaItem {
   final String? imagePath; // assets/images/doa/xxx.png
   final String? audioPath; // assets/audio/xxx.ogg
   final String? description;
+  final String? textFile; // filename in assets/text/ (HTML-formatted)
   /// If false, this doa acts as a manual break-point: auto-play stops here,
   /// the user must tap Play manually. Default is true.
   final bool autoPlay;
@@ -42,6 +43,7 @@ class DoaItem {
     this.imagePath,
     this.audioPath,
     this.description,
+    this.textFile,
     this.autoPlay = true,
   });
 }

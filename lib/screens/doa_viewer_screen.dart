@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:provider/provider.dart';
 import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
@@ -144,10 +146,16 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
     final prefix = widget.roundPrefix!;
     final num = widget.roundNumber!;
-    final label = prefix == 'tawaf' ? 'Tawaf Pusingan $num' : "Sa'ie Ke-$num";
+    final label = prefix == 'tawaf'
+        ? 'Tawaf Pusingan $num'
+        : prefix == 'tawaf_wida'
+            ? "Tawaf Wida' Pusingan $num"
+            : "Sa'ie Ke-$num";
     final question = prefix == 'tawaf'
         ? 'Adakah anda telah melengkapkan tawaf pusingan $num?'
-        : "Adakah anda telah melengkapkan sa'ie ke-$num?";
+        : prefix == 'tawaf_wida'
+            ? "Adakah anda telah melengkapkan tawaf wida' pusingan $num?"
+            : "Adakah anda telah melengkapkan sa'ie ke-$num?";
 
     final result = await showDialog<bool>(
       context: context,
@@ -372,6 +380,17 @@ class _DoaPage extends StatelessWidget {
             ),
           ],
 
+          if (doa.textFile != null) ...[
+            const SizedBox(height: 16),
+            FutureBuilder<String>(
+              future: rootBundle.loadString('assets/text/${doa.textFile}'),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox.shrink();
+                return Html(data: snapshot.data!);
+              },
+            ),
+          ],
+
           const SizedBox(height: 80),
         ],
       ),
@@ -493,7 +512,7 @@ class _RoundStatusIndicator extends StatelessWidget {
       onTap: () {
         final confirmed = progressProvider.getConfirmedCount(prefix);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${prefix == 'tawaf' ? 'Tawaf' : "Sa'ie"}: $confirmed/$total selesai'),
+          content: Text('${prefix == 'tawaf' ? 'Tawaf' : prefix == 'tawaf_wida' ? "Tawaf Wida'" : "Sa'ie"}: $confirmed/$total selesai'),
           duration: const Duration(seconds: 2),
         ));
       },

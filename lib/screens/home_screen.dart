@@ -236,6 +236,7 @@ class _StepCard extends StatelessWidget {
     Color(0xFF006064),
     Color(0xFF37474F),
     Color(0xFF5D4037),
+    Color(0xFF00695C), // Lain-lain Doa
   ];
 
   static const _stepIcons = [
@@ -247,6 +248,7 @@ class _StepCard extends StatelessWidget {
     Icons.directions_walk,
     Icons.content_cut,
     Icons.favorite,
+    Icons.auto_stories, // Lain-lain Doa
   ];
 
   @override

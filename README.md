@@ -5,9 +5,9 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 ## Features
 
 ### Doa Content
-- **8 Umrah ritual steps** from Ihram to Tawaf Wida'
-- **182 audio files** — listen to each doa recited aloud
-- **163 doa images** — Arabic text with transliteration
+- **9 Umrah steps** from Ihram to Lain-lain Doa
+- **173 audio files** — listen to each doa recited aloud
+- **176 doa images** — Arabic text with transliteration
 - **Offline** — all content bundled in the app
 
 ### Navigation
@@ -73,7 +73,8 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 5. Solat Sunat Tawaf (Makam Ibrahim, Multazam, Air Zam Zam)
 6. Sa'ie (7 kali Safa–Marwah)
 7. Tahallul (bercukur / bergunting)
-8. Tawaf Wida'
+8. Tawaf Wida' (7 pusingan + Solat Sunat Tawaf, Doa Makam Ibrahim, Minum Air Zam Zam)
+9. Lain-lain Doa (Doa Musafir, Bab Salam, Bani Syaibah, Sujud Sajadah, Zamzam, Multazam, Hijir Ismail, Makam Ibrahim, Solat Jenazah, Peringatan Wanita, Tawaf Sunat, Wuduk)
 
 ---
 

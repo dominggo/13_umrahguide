@@ -81,13 +81,30 @@ class UmrahSearchDelegate extends SearchDelegate<DoaItem?> {
               : null,
           onTap: () {
             close(context, r.doa);
+            final step = umrahSteps.firstWhere((s) => s.id == r.stepId);
+            // flatten
+            final List<DoaItem> flat = [];
+            final List<String> flatStepIds = [];
+            final List<String> flatSubIds = [];
+            for (final sub in step.subSteps) {
+              for (final d in sub.duas) {
+                flat.add(d);
+                flatStepIds.add(step.id);
+                flatSubIds.add(sub.id);
+              }
+            }
+            // compute index of selected doa in flat
+            int flatIdx = flat.indexWhere((d) => d == r.doa);
+            if (flatIdx < 0) flatIdx = r.indexInSiblings; // fallback
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => DoaViewerScreen(
-                  duas: r.siblings,
-                  initialIndex: r.indexInSiblings,
+                  duas: flat,
+                  initialIndex: flatIdx,
                   title: r.substepTitle,
+                  stepIds: flatStepIds,
+                  substepIds: flatSubIds,
                 ),
               ),
             );
@@ -108,6 +125,7 @@ class UmrahSearchDelegate extends SearchDelegate<DoaItem?> {
             out.add(_SearchResult(
               doa: doa,
               stepTitle: step.title,
+              stepId: step.id,
               substepTitle: sub.title,
               siblings: sub.duas,
               indexInSiblings: i,
@@ -123,6 +141,7 @@ class UmrahSearchDelegate extends SearchDelegate<DoaItem?> {
 class _SearchResult {
   final DoaItem doa;
   final String stepTitle;
+  final String stepId;
   final String substepTitle;
   final List<DoaItem> siblings;
   final int indexInSiblings;
@@ -130,6 +149,7 @@ class _SearchResult {
   const _SearchResult({
     required this.doa,
     required this.stepTitle,
+    required this.stepId,
     required this.substepTitle,
     required this.siblings,
     required this.indexInSiblings,

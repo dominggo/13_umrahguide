@@ -11,10 +11,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:uuid/uuid.dart';
 import '../models/journey_models.dart';
 import '../models/journey_history_provider.dart';
-import '../models/journey_record.dart';
 import '../models/progress_provider.dart';
 import '../data/umrah_data.dart';
 
@@ -49,18 +47,12 @@ class _JourneySummaryScreenState extends State<JourneySummaryScreen> {
   }
 
   Future<void> _autoSave() async {
-    if (_saved || widget.journeyId != null) return;
+    // previous code handled save when entering summary; under new scheme the
+    // record is already created by LocationProvider.finalizeJourney and stored
+    // in history. we only need to clear progress once.
+    if (_saved) return;
     _saved = true;
-    final history = context.read<JourneyHistoryProvider>();
     final prog = context.read<ProgressProvider>();
-    final record = UmrahJourneyRecord(
-      id: const Uuid().v4(),
-      startTime: widget.startTime,
-      endTime: widget.endTime,
-      events: widget.events,
-      gpsTrack: widget.gpsTrack,
-    );
-    await history.addJourney(record);
     await prog.clearProgress();
   }
 

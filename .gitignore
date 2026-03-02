@@ -59,6 +59,14 @@ build/
 *.log
 # pubspec.lock should be committed for apps (not libraries)
 
+# Flutter DevTools settings (IDE/tool-generated, not project-specific)
+devtools_options.yaml
+
+# Generated files
+flutter_gen/
+*.g.dart
+*.freezed.dart
+
 # Windows build
 windows/flutter/generated_plugin_registrant.cc
 windows/flutter/generated_plugin_registrant.h

@@ -4,11 +4,12 @@ import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/bookmark_provider.dart';
 import '../models/progress_provider.dart';
+import '../models/location_provider.dart';
+import '../models/journey_history_provider.dart';
 import 'step_detail_screen.dart';
 import 'guide_flow_screen.dart';
 import 'search_screen.dart';
 import 'makkah_map_screen.dart';
-import 'journey_screen.dart';
 import 'journey_history_screen.dart';
 import 'doa_viewer_screen.dart';
 
@@ -68,12 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
           NavigationDestination(
             icon: Icon(Icons.directions_walk_outlined),
             selectedIcon: Icon(Icons.directions_walk),
-            label: 'Panduan Aliran',
+            label: 'Umrah',
           ),
           NavigationDestination(
             icon: Icon(Icons.bookmark_outline),
             selectedIcon: Icon(Icons.bookmark),
-            label: 'Simpan',
+            label: 'Simpanan',
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),
@@ -108,8 +109,6 @@ class _MenuTab extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(child: _HeaderBanner()),
-        // "Masuk ke Masjid" card
-        const SliverToBoxAdapter(child: _JourneyStartCard()),
         SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverGrid(
@@ -130,51 +129,6 @@ class _MenuTab extends StatelessWidget {
   }
 }
 
-class _JourneyStartCard extends StatelessWidget {
-  const _JourneyStartCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Card(
-        color: const Color(0xFF1B5E20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const JourneyScreen()),
-          ),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              children: [
-                Icon(Icons.mosque, color: Colors.white, size: 28),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Masuk ke Masjid untuk Mulakan Tawaf',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      Text(
-                        'Pantau perjalanan umrah anda secara langsung',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _HeaderBanner extends StatelessWidget {
   @override
@@ -211,7 +165,7 @@ class _HeaderBanner extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Pilih langkah atau ikut aliran panduan',
+                  'Pilih menu atau klik pada tab Umrah untuk mulakan Umrah',
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
@@ -257,6 +211,17 @@ class _StepCard extends StatelessWidget {
     final color = _stepColors[idx % _stepColors.length];
     final icon = _stepIcons[idx % _stepIcons.length];
 
+    // determine completion state
+    final prog = context.watch<ProgressProvider>();
+    
+    // Only show checkmark for Tawaf and Saie if 7/7 rounds completed
+    bool showCheckmark = false;
+    if (step.id == 'tawaf') {
+      showCheckmark = prog.getConfirmedCount('tawaf') == 7;
+    } else if (step.id == 'saie') {
+      showCheckmark = prog.getConfirmedCount('saie') == 7;
+    }
+
     return Card(
       clipBehavior: Clip.hardEdge,
       child: InkWell(
@@ -281,15 +246,26 @@ class _StepCard extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '${idx + 1}. ${step.title}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${idx + 1}. ${step.title}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (showCheckmark) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -319,6 +295,11 @@ class _GuideFlowTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final prog = context.watch<ProgressProvider>();
 
+    // Filter out Tawaf Wida, Lain-lain Doa, and Panduan dan Tips
+    final filteredSteps = umrahSteps.where((step) =>
+      step.id != 'tawaf_wida' && step.id != 'lain_lain' && step.id != 'panduan'
+    ).toList();
+
     return Column(
       children: [
         Container(
@@ -339,13 +320,13 @@ class _GuideFlowTab extends StatelessWidget {
         ),
 
         // Resume banner
-        if (prog.hasSavedProgress)
+        if (prog.hasSavedProgress) ...[
           GestureDetector(
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => GuideFlowScreen(
-                  steps: umrahSteps,
+                  steps: filteredSteps,
                   initialStepIndex: prog.stepIndex,
                   initialSubStepIndex: prog.subStepIndex,
                 ),
@@ -373,7 +354,7 @@ class _GuideFlowTab extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
                         ),
                         Text(
-                          'Langkah ${prog.stepIndex + 1}: ${umrahSteps[prog.stepIndex].title}',
+                          'Langkah ${prog.stepIndex + 1}: ${prog.stepIndex < filteredSteps.length ? filteredSteps[prog.stepIndex].title : "Selesai"}',
                           style: const TextStyle(fontSize: 12, color: Color(0xFF1B5E20)),
                         ),
                       ],
@@ -384,14 +365,57 @@ class _GuideFlowTab extends StatelessWidget {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final loc = context.read<LocationProvider>();
+                  final history = context.read<JourneyHistoryProvider>();
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Batalkan Umrah?'),
+                      content: const Text(
+                          'Adakah anda pasti untuk batalkan Umrah ini. Jika anda dalam ihram, anda perlu membayar DAM.'),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Tidak')),
+                        FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Batalkan')),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    // record incomplete journey then clear
+                    final rec = await loc.snapshotAndClear(notes: 'Dibatalkan');
+                    await history.addOrUpdateJourney(rec);
+                    if (context.mounted) {
+                      await prog.clearProgress();
+                    }
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Progres Umrah dibatalkan')),
+                    );
+                  }
+                },
+                child: const Text('Batalkan Umrah', style: TextStyle(color: Colors.red)),
+              ),
+            ),
+          ),
+        ],
 
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: umrahSteps.length,
+            itemCount: filteredSteps.length,
             itemBuilder: (context, index) {
-              final step = umrahSteps[index];
-              final isLast = index == umrahSteps.length - 1;
+              final step = filteredSteps[index];
+              final isLast = index == filteredSteps.length - 1;
               return _FlowStepTile(
                 step: step,
                 stepNumber: index + 1,
@@ -400,27 +424,7 @@ class _GuideFlowTab extends StatelessWidget {
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Mula Panduan Aliran'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1B5E20),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => GuideFlowScreen(steps: umrahSteps, initialStepIndex: 0),
-                ),
-              ),
-            ),
-          ),
-        ),
+
       ],
     );
   }
@@ -476,7 +480,33 @@ class _FlowStepTile extends StatelessWidget {
                 child: ListTile(
                   title: Text(step.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(step.subtitle),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Builder(builder: (ctx) {
+                    final prog = ctx.watch<ProgressProvider>();
+                    bool completed = prog.stepIndex > stepNumber - 1;
+                    String? progressText;
+                    if (step.id == 'tawaf' || step.id == 'saie') {
+                      final count = prog.getConfirmedCount(step.id);
+                      progressText = '$count/7';
+                      if (count >= 7) completed = true;
+                    }
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (completed) ...[
+                          const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                          const SizedBox(width: 4),
+                        ],
+                        if (progressText != null) ...[
+                          Text(
+                            progressText,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1B5E20)),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        const Icon(Icons.chevron_right),
+                      ],
+                    );
+                  }),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => StepDetailScreen(step: step)),

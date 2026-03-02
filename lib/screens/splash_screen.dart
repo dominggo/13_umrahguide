@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               ),
               const SizedBox(height: 8),
               const Text(
-                'Doa, Gambar & Audio',
+                'Developed by Faeq Studio! with Audios and Images dari M-Umrah Pro!',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 16,

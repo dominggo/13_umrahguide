@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/umrah_step.dart';
 import 'substep_screen.dart';
-import 'guide_flow_screen.dart';
-import '../data/umrah_data.dart';
 
 class StepDetailScreen extends StatelessWidget {
   final UmrahStep step;
@@ -71,33 +69,7 @@ class StepDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // Start guided flow button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Ikut Aliran Panduan'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: () {
-                  final stepIndex = umrahSteps.indexOf(step);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => GuideFlowScreen(
-                        steps: umrahSteps,
-                        initialStepIndex: stepIndex,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
+
         ],
       ),
     );

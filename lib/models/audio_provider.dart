@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
 class AudioProvider extends ChangeNotifier {
-  final AudioPlayer _player = AudioPlayer();
+  late AudioPlayer _player;
   String? _currentPath;
   bool _isPlaying = false;
 
@@ -13,10 +13,14 @@ class AudioProvider extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   String? get currentPath => _currentPath;
 
-  /// Fires once whenever the current track finishes playing naturally.
   Stream<void> get onTrackComplete => _trackCompleteController.stream;
 
   AudioProvider() {
+    _initPlayer();
+  }
+
+  void _initPlayer() {
+    _player = AudioPlayer();
     _player.playerStateStream.listen((state) {
       _isPlaying = state.playing;
       if (state.processingState == ProcessingState.completed) {
@@ -28,19 +32,42 @@ class AudioProvider extends ChangeNotifier {
     });
   }
 
+  Future<void> _reinitAndRecover() async {
+    try {
+      await _player.stop();
+      await _player.dispose();
+    } catch (_) {}
+    _initPlayer();
+  }
+
   Future<void> play(String assetPath) async {
-    if (_currentPath == assetPath && _isPlaying) {
-      await _player.pause();
-      return;
+    try {
+      if (_currentPath == assetPath && _isPlaying) {
+        await _player.pause();
+        return;
+      }
+      _currentPath = assetPath;
+      await _player.stop();
+      await _player.setAsset(assetPath);
+      await _player.play();
+    } catch (e) {
+      // try to recover once
+      await _reinitAndRecover();
+      try {
+        await _player.setAsset(assetPath);
+        await _player.play();
+      } catch (e2) {
+        // give up - clear current path so UI can recover
+        _currentPath = null;
+        rethrow;
+      }
     }
-    _currentPath = assetPath;
-    await _player.stop();
-    await _player.setAsset(assetPath);
-    await _player.play();
   }
 
   Future<void> stop() async {
-    await _player.stop();
+    try {
+      await _player.stop();
+    } catch (_) {}
     _currentPath = null;
     _isPlaying = false;
     notifyListeners();
@@ -50,7 +77,9 @@ class AudioProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _player.dispose();
+    try {
+      _player.dispose();
+    } catch (_) {}
     _trackCompleteController.close();
     super.dispose();
   }

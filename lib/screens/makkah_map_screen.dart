@@ -99,13 +99,29 @@ class _MakkahMapScreenState extends State<MakkahMapScreen> {
                             ),
                           ],
                         ),
-                      // Zone markers
+                      // Zone polygons (behind markers)
+                      PolygonLayer(
+                        polygons: umrahLocations
+                            .where((l) => l.polygon != null && l.polygon!.isNotEmpty)
+                            .map((loc) {
+                          final isActive = currentZone?.id == loc.id;
+                          return Polygon(
+                            points: loc.polygon!,
+                            color: isActive
+                                ? const Color(0xFF1B5E20).withValues(alpha: 0.2)
+                                : const Color(0xFF388E3C).withValues(alpha: 0.15),
+                            borderColor: isActive ? const Color(0xFF1B5E20) : Colors.green,
+                            borderStrokeWidth: isActive ? 2 : 1,
+                          );
+                        }).toList(),
+                      ),
+                      // Zone markers (for circle-based zones or just centers)
                       MarkerLayer(
                         markers: [
-                          ...umrahLocations.map((loc) {
+                          ...umrahLocations.where((loc) => loc.center != null).map((loc) {
                             final isActive = currentZone?.id == loc.id;
                             return Marker(
-                              point: loc.center,
+                              point: loc.center!,
                               width: 48,
                               height: 48,
                               child: GestureDetector(
@@ -170,6 +186,10 @@ class _MakkahMapScreenState extends State<MakkahMapScreen> {
     for (final step in umrahSteps) {
       if (step.id == loc.stepId) {
         for (final sub in step.subSteps) {
+          // Only include duas from the specific substep if specified
+          if (loc.substepId != null && sub.id != loc.substepId) {
+            continue;
+          }
           final duas = List<DoaItem>.from(sub.duas);
           for (int i = 0; i < duas.length; i++) {
             relatedDuas.add(_DoaRef(doa: duas[i], index: i, siblings: duas, substepTitle: sub.title));

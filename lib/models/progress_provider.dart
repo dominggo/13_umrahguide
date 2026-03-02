@@ -9,10 +9,12 @@ class ProgressProvider extends ChangeNotifier {
   static const _stepKey = 'progress_step';
   static const _subKey = 'progress_sub';
   static const _roundsKey = 'rounds_v1';
+  static const _autoPlayKey = 'autoPlayEnabled';
 
   int _stepIndex = 0;
   int _subStepIndex = 0;
   bool _hasSaved = false;
+  bool _autoPlayEnabled = true;
 
   /// Round tracking: key is substep id (e.g. "tawaf_1"), value is status string
   Map<String, RoundStatus> _rounds = {};
@@ -20,6 +22,16 @@ class ProgressProvider extends ChangeNotifier {
   int get stepIndex => _stepIndex;
   int get subStepIndex => _subStepIndex;
   bool get hasSavedProgress => _hasSaved;
+  bool get autoPlayEnabled => _autoPlayEnabled;
+
+  set autoPlayEnabled(bool v) {
+    if (_autoPlayEnabled == v) return;
+    _autoPlayEnabled = v;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool(_autoPlayKey, v);
+    });
+    notifyListeners();
+  }
 
   ProgressProvider() {
     _load();
@@ -30,6 +42,7 @@ class ProgressProvider extends ChangeNotifier {
     _stepIndex = prefs.getInt(_stepKey) ?? 0;
     _subStepIndex = prefs.getInt(_subKey) ?? 0;
     _hasSaved = prefs.containsKey(_stepKey);
+    _autoPlayEnabled = prefs.getBool(_autoPlayKey) ?? true;
 
     final roundsJson = prefs.getString(_roundsKey);
     if (roundsJson != null) {

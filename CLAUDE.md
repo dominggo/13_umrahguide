@@ -48,7 +48,7 @@ Use `setup_and_run.bat` or `build_apk.bat` as shortcuts for common tasks.
 ```
 SplashScreen (3 s auto-nav)
   └── HomeScreen (BottomNavigationBar, 4 tabs)
-        ├── Tab 0: Menu — grid of 8 UmrahStep cards
+        ├── Tab 0: Menu — grid of 9 UmrahStep cards
         │     └── StepDetailScreen → SubstepScreen (doa thumbnails)
         │           └── DoaViewerScreen (PageView + audio nav + round tracking)
         ├── Tab 1: Panduan Aliran — GuideFlowScreen (linear, progress save/resume)
@@ -72,7 +72,7 @@ AppBar extras (all tabs):
 
 | File | Purpose |
 |------|---------|
-| `lib/data/umrah_data.dart` | All 8 Umrah steps with substeps & duas — edit content here |
+| `lib/data/umrah_data.dart` | All 9 Umrah steps with substeps & duas — edit content here |
 | `lib/models/umrah_step.dart` | `UmrahStep`, `UmrahSubStep`, `DoaItem` data classes |
 | `lib/models/audio_provider.dart` | Global audio state + track-complete stream |
 | `lib/models/progress_provider.dart` | Guided-flow cursor + `RoundStatus` tracking |
@@ -80,7 +80,7 @@ AppBar extras (all tabs):
 | `lib/models/journey_history_provider.dart` | Journey CRUD + JSON file persistence |
 | `lib/models/umrah_location.dart` | `UmrahLocation` model + 7 Masjidil Haram zone coordinates |
 | `lib/screens/doa_viewer_screen.dart` | Full-screen doa PageView, auto-play logic, round dialogs |
-| `lib/screens/guide_flow_screen.dart` | Linear guided flow through all 8 steps |
+| `lib/screens/guide_flow_screen.dart` | Linear guided flow through all 9 steps |
 | `lib/screens/makkah_map_screen.dart` | Offline OSM map with GPS overlay and zone markers |
 | `lib/screens/journey_summary_screen.dart` | Journey summary with PNG/PDF export |
 | `lib/utils/map_tile_cache.dart` | Shared in-memory OSM tile cache (singleton) |

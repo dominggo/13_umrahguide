@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:provider/provider.dart';
+import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
@@ -16,10 +17,14 @@ class DoaViewerScreen extends StatefulWidget {
   final String? roundPrefix;
   /// Optional: round number (1-7) for round completion dialog
   final int? roundNumber;
-  /// Step id for bookmark key building
+  /// Step id for bookmark key building (used when lists not provided)
   final String? stepId;
-  /// Substep id for bookmark key building
+  /// Substep id for bookmark key building (used when lists not provided)
   final String? substepId;
+  /// Parallel list of step ids for each doa (length == duas.length)
+  final List<String>? stepIds;
+  /// Parallel list of substep ids for each doa
+  final List<String>? substepIds;
 
   const DoaViewerScreen({
     super.key,
@@ -30,6 +35,8 @@ class DoaViewerScreen extends StatefulWidget {
     this.roundNumber,
     this.stepId,
     this.substepId,
+    this.stepIds,
+    this.substepIds,
   });
 
   @override
@@ -41,6 +48,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   late int _currentIndex;
   bool _repeat = false;
   StreamSubscription<void>? _completeSub;
+  bool _isProgrammatic = false;
 
   @override
   void initState() {
@@ -52,6 +60,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _completeSub = context.read<AudioProvider>().onTrackComplete.listen((_) => _onTrackComplete());
+      // Check for entering new Tawaf/Sa'ie round (asks about previous round)
+      _checkEnteringNewRound();
     });
   }
 
@@ -60,6 +70,59 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     _completeSub?.cancel();
     _pageCtrl.dispose();
     super.dispose();
+  }
+
+  /// Check if entering a new Tawaf/Sa'ie round and show entry notice
+  Future<void> _checkEnteringNewRound() async {
+    if (!mounted || widget.roundPrefix == null || widget.roundNumber == null) return;
+    
+    final currentRound = widget.roundNumber!;
+    if (currentRound <= 1) return; // No previous round to check
+    
+    final prefix = widget.roundPrefix!;
+    final prevRoundNum = currentRound - 1;
+    final prevRoundKey = '${prefix}_$prevRoundNum';
+    
+    final prog = context.read<ProgressProvider>();
+    // Only show if the previous round hasn't been marked yet
+    if (prog.getRoundStatus(prevRoundKey) != RoundStatus.pending) return;
+    
+    final label = prefix == 'tawaf'
+        ? 'Tawaf Pusingan $prevRoundNum'
+        : prefix == 'tawaf_wida'
+            ? "Tawaf Wida' Pusingan $prevRoundNum"
+            : "Sa'ie Ke-$prevRoundNum";
+    final question = prefix == 'tawaf'
+        ? 'Adakah anda telah lengkapkan tawaf pusingan $prevRoundNum?'
+        : prefix == 'tawaf_wida'
+            ? "Adakah anda telah lengkapkan tawaf wida' pusingan $prevRoundNum?"
+            : "Adakah anda telah lengkapkan sa'ie ke-$prevRoundNum?";
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text(label),
+        content: Text(question),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tidak'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ya'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      await prog.confirmRound(prevRoundKey);
+    } else {
+      await prog.skipRound(prevRoundKey);
+    }
   }
 
   // ── Auto-play group logic ─────────────────────────────────────────────────
@@ -107,31 +170,40 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     // else: end of group, no repeat — just stop
   }
 
-  void _goTo(int index, {bool autoPlay = false}) {
+  Future<void> _goTo(int index, {bool autoPlay = false}) async {
     if (index < 0 || index >= widget.duas.length) return;
-    _pageCtrl.animateToPage(
+    _isProgrammatic = true;
+    await _pageCtrl.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
+    _isProgrammatic = false;
     if (autoPlay) {
       final doa = widget.duas[index];
       if (doa.audioPath != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) context.read<AudioProvider>().play(doa.audioPath!);
-        });
+        await Future.delayed(const Duration(milliseconds: 50));
+        if (mounted) {
+          // grab provider outside of await to satisfy analyzer
+          final audioProv = context.read<AudioProvider>();
+          try {
+            await audioProv.play(doa.audioPath!);
+          } catch (e) {
+            await audioProv.stop();
+            await audioProv.play(doa.audioPath!);
+          }
+        }
       }
     }
   }
 
   void _onPageChanged(int i) {
     setState(() => _currentIndex = i);
-    context.read<AudioProvider>().stop();
-
-    // Check round completion when reaching last doa
-    if (_isRoundSubstep && i == widget.duas.length - 1) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _checkRoundCompletion());
+    if (!_isProgrammatic) {
+      context.read<AudioProvider>().stop();
     }
+    // Handle checkpoint-based tracking: only prompt/save when a DoaItem is marked as checkpoint
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleCheckpointForCurrentDoa());
   }
 
   bool get _isRoundSubstep =>
@@ -139,49 +211,147 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
   String get _roundKey => '${widget.roundPrefix}_${widget.roundNumber}';
 
-  Future<void> _checkRoundCompletion() async {
-    if (!mounted || !_isRoundSubstep) return;
-    final prog = context.read<ProgressProvider>();
-    if (prog.isRoundComplete(_roundKey)) return;
-
+  /// Build AppBar title with round info if applicable
+  String _buildAppBarTitle() {
+    String baseTitle = widget.title;
+    
+    if (!_isRoundSubstep) return baseTitle;
+    
     final prefix = widget.roundPrefix!;
-    final num = widget.roundNumber!;
-    final label = prefix == 'tawaf'
-        ? 'Tawaf Pusingan $num'
-        : prefix == 'tawaf_wida'
-            ? "Tawaf Wida' Pusingan $num"
-            : "Sa'ie Ke-$num";
-    final question = prefix == 'tawaf'
-        ? 'Adakah anda telah melengkapkan tawaf pusingan $num?'
-        : prefix == 'tawaf_wida'
-            ? "Adakah anda telah melengkapkan tawaf wida' pusingan $num?"
-            : "Adakah anda telah melengkapkan sa'ie ke-$num?";
+    final roundNum = widget.roundNumber!;
+    
+    // Format: "Title x/7" for Saie rounds
+    if (prefix == 'saie') {
+      return "$baseTitle $roundNum/7";
+    }
+    
+    return baseTitle;
+  }
+
+
+
+  /// When the currently visible DoaItem is marked as a checkpoint, prompt the user
+  /// to confirm completion. If confirmed, save progress and update round/step status.
+  Future<void> _handleCheckpointForCurrentDoa() async {
+    if (!mounted) return;
+
+    final doa = widget.duas[_currentIndex];
+    if (!doa.isCheckpoint) return;
+
+    // Resolve current step/substep ids same as _saveProgress
+    String? currentStepId = widget.stepIds != null && _currentIndex < widget.stepIds!.length
+        ? widget.stepIds![_currentIndex]
+        : widget.stepId;
+    String? currentSubstepId = widget.substepIds != null && _currentIndex < widget.substepIds!.length
+        ? widget.substepIds![_currentIndex]
+        : widget.substepId;
+
+    if (currentStepId == null || currentSubstepId == null) return;
+
+    final prog = context.read<ProgressProvider>();
+
+    // If this is a round substep (tawaf/saie), use round key
+    if (_isRoundSubstep) {
+      // If already recorded, skip
+      if (prog.getRoundStatus(_roundKey) != RoundStatus.pending) return;
+
+      final prefix = widget.roundPrefix!;
+      final num = widget.roundNumber!;
+      final label = prefix == 'tawaf'
+          ? 'Tawaf Pusingan $num'
+          : prefix == 'tawaf_wida'
+              ? "Tawaf Wida' Pusingan $num"
+              : "Sa'ie Ke-$num";
+      final question = prefix == 'tawaf'
+          ? 'Adakah anda telah lengkapkan tawaf pusingan $num?'
+          : prefix == 'tawaf_wida'
+              ? "Adakah anda telah lengkapkan tawaf wida' pusingan $num?"
+              : "Adakah anda telah lengkapkan sa'ie ke-$num?";
+
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: Text(label),
+          content: Text(question),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ya')),
+          ],
+        ),
+      );
+
+      if (!mounted) return;
+      if (result == true) {
+        // Save progress for this substep then confirm round
+        final stepIndex = umrahSteps.indexWhere((s) => s.id == currentStepId);
+        if (stepIndex != -1) {
+          final step = umrahSteps[stepIndex];
+          final subIndex = step.subSteps.indexWhere((s) => s.id == currentSubstepId);
+          if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
+        }
+        await prog.confirmRound(_roundKey);
+      } else {
+        await prog.skipRound(_roundKey);
+      }
+
+      return;
+    }
+
+    // Non-round checkpoints: handle specific step completions (ihram, solat_tawaf, tahallul)
+    final stepCompletionKey = '${currentStepId}_completed';
+    if (prog.getRoundStatus(stepCompletionKey) == RoundStatus.confirmed) return;
+
+    String? title;
+    String? message;
+    if (currentStepId == 'ihram') {
+      title = 'Ihram Selesai';
+      message = 'Adakah anda telah melengkapkan Ihram?';
+    } else if (currentStepId == 'solat_tawaf') {
+      title = 'Solat Sunat Tawaf Selesai';
+      message = 'Adakah anda telah melengkapkan Solat Sunat Tawaf?';
+    } else if (currentStepId == 'tahallul') {
+      title = 'Tahalul Selesai';
+      message = 'Adakah anda telah melengkapkan Tahalul?';
+    } else {
+      // Generic checkpoint: save progress without extra confirmation key if not special
+      final stepIndex = umrahSteps.indexWhere((s) => s.id == currentStepId);
+      if (stepIndex != -1) {
+        final step = umrahSteps[stepIndex];
+        final subIndex = step.subSteps.indexWhere((s) => s.id == currentSubstepId);
+        if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
+      }
+      return;
+    }
 
     final result = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: Text(label),
-        content: Text(question),
+        title: Text(title ?? ''),
+        content: Text(message ?? ''),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Tidak'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ya')),
         ],
       ),
     );
 
     if (!mounted) return;
     if (result == true) {
-      await prog.confirmRound(_roundKey);
+      final stepIndex = umrahSteps.indexWhere((s) => s.id == currentStepId);
+      if (stepIndex != -1) {
+        final step = umrahSteps[stepIndex];
+        final subIndex = step.subSteps.indexWhere((s) => s.id == currentSubstepId);
+        if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
+      }
+      await prog.confirmRound(stepCompletionKey);
     } else {
-      await prog.skipRound(_roundKey);
+      await prog.skipRound(stepCompletionKey);
     }
   }
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -190,13 +360,19 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final bm = context.watch<BookmarkProvider>();
 
     final currentDoa = widget.duas[_currentIndex];
-    final bmKey = widget.stepId != null && widget.substepId != null
-        ? BookmarkProvider.keyFor(widget.stepId!, widget.substepId!, currentDoa.title)
+    String? curStep = widget.stepIds != null && _currentIndex < widget.stepIds!.length
+        ? widget.stepIds![_currentIndex]
+        : widget.stepId;
+    String? curSub = widget.substepIds != null && _currentIndex < widget.substepIds!.length
+        ? widget.substepIds![_currentIndex]
+        : widget.substepId;
+    final bmKey = curStep != null && curSub != null
+        ? BookmarkProvider.keyFor(curStep, curSub, currentDoa.title)
         : null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(_buildAppBarTitle()),
         actions: [
           // Round indicator for Tawaf/Sa'ie
           if (_isRoundSubstep)
@@ -215,6 +391,14 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
               tooltip: bm.isBookmarked(bmKey) ? 'Buang Simpanan' : 'Simpan Doa',
               onPressed: () => bm.toggle(bmKey),
             ),
+          // AutoPlay toggle
+          IconButton(
+            icon: Icon(prog.autoPlayEnabled ? Icons.play_arrow : Icons.play_disabled),
+            tooltip: prog.autoPlayEnabled ? 'Lumpuhkan AutoPlay' : 'Dayakan AutoPlay',
+            onPressed: () {
+              prog.autoPlayEnabled = !prog.autoPlayEnabled;
+            },
+          ),
           // Counter
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

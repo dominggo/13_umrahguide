@@ -12,6 +12,22 @@ class JourneyHistoryScreen extends StatelessWidget {
     final history = context.watch<JourneyHistoryProvider>();
     final journeys = history.journeys;
 
+    if (history.errorMsg != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Sejarah Umrah')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 12),
+              Text(history.errorMsg!, style: TextStyle(color: Colors.red[700])),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Sejarah Umrah — ${history.totalUmrahCount} kali selesai'),

@@ -34,9 +34,12 @@ class DoaItem {
   final String? audioPath; // assets/audio/xxx.ogg
   final String? description;
   final String? textFile; // filename in assets/text/ (HTML-formatted)
-  /// If false, this doa acts as a manual break-point: auto-play stops here,
-  /// the user must tap Play manually. Default is true.
+  /// If false, this doa acts as a manual break-point: audio auto-chain stops
+  /// here and the user must tap Play manually. Default is true.
   final bool autoPlay;
+  /// Marks this doa as a checkpoint. When the user reaches a checkpoint the
+  /// app will prompt confirmation and on confirmation progress is recorded.
+  final bool isCheckpoint;
 
   const DoaItem({
     required this.title,
@@ -45,5 +48,6 @@ class DoaItem {
     this.description,
     this.textFile,
     this.autoPlay = true,
+    this.isCheckpoint = false,
   });
 }

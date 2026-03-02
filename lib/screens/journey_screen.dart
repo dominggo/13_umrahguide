@@ -6,6 +6,7 @@ import '../models/progress_provider.dart';
 import '../models/umrah_location.dart';
 import 'guide_flow_screen.dart';
 import 'journey_summary_screen.dart';
+import '../models/journey_history_provider.dart';
 
 class JourneyScreen extends StatelessWidget {
   const JourneyScreen({super.key});
@@ -129,6 +130,7 @@ class JourneyScreen extends StatelessWidget {
   }
 
   Future<void> _endJourney(BuildContext context, LocationProvider loc, ProgressProvider prog) async {
+    final history = context.read<JourneyHistoryProvider>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -143,18 +145,23 @@ class JourneyScreen extends StatelessWidget {
 
     if (confirm != true || !context.mounted) return;
 
-    final result = await loc.endJourney();
-    await prog.clearProgress();
+    // finalize through provider so state is cleared
+    final record = await loc.finalizeJourney();
+    await history.addOrUpdateJourney(record);
+    if (context.mounted) {
+      await prog.clearProgress();
+    }
 
     if (context.mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => JourneySummaryScreen(
-            startTime: result.start ?? DateTime.now(),
-            endTime: DateTime.now(),
-            gpsTrack: result.track,
-            events: result.events,
+            startTime: record.startTime,
+            endTime: record.endTime,
+            gpsTrack: record.gpsTrack,
+            events: record.events,
+            journeyId: record.id,
           ),
         ),
       );

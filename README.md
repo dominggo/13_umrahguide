@@ -11,7 +11,7 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 - **Offline** — all content bundled in the app
 
 ### Navigation
-- **Menu** — browse all 8 steps freely
+- **Menu** — browse all 9 steps freely
 - **Panduan Aliran** — linear guided walk-through with progress auto-save and resume
 - **Carian (Search)** — search any doa by name across all steps
 

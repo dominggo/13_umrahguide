@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
@@ -32,18 +33,40 @@ class SubStepScreen extends StatelessWidget {
             index: index,
             stepId: stepId,
             substepId: subStep.id,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DoaViewerScreen(
-                  duas: subStep.duas,
-                  initialIndex: index,
-                  title: subStep.title,
-                  stepId: stepId,
-                  substepId: subStep.id,
+            onTap: () {
+              // build flattened list of all duas in this step
+              final step = umrahSteps.firstWhere((s) => s.id == stepId);
+              final List<DoaItem> flat = [];
+              final List<String> flatStepIds = [];
+              final List<String> flatSubIds = [];
+              for (final sub in step.subSteps) {
+                for (final d in sub.duas) {
+                  flat.add(d);
+                  flatStepIds.add(step.id);
+                  flatSubIds.add(sub.id);
+                }
+              }
+              // compute offset index
+              int offset = 0;
+              for (final prev in step.subSteps) {
+                if (prev.id == subStep.id) break;
+                offset += prev.duas.length;
+              }
+              final initialFlatIndex = offset + index;
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DoaViewerScreen(
+                    duas: flat,
+                    initialIndex: initialFlatIndex,
+                    title: subStep.title,
+                    stepIds: flatStepIds,
+                    substepIds: flatSubIds,
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),

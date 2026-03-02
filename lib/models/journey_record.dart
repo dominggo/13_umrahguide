@@ -8,6 +8,11 @@ class UmrahJourneyRecord {
   final List<JourneyEvent> events;
   final List<JourneyPoint> gpsTrack;
 
+  // New fields
+  bool completed;
+  int version;
+  List<StepSummary> stepSummaries;
+
   UmrahJourneyRecord({
     required this.id,
     required this.startTime,
@@ -15,6 +20,9 @@ class UmrahJourneyRecord {
     this.notes,
     required this.events,
     required this.gpsTrack,
+    this.completed = true,
+    this.version = 1,
+    this.stepSummaries = const [],
   });
 
   Duration get totalDuration => endTime.difference(startTime);
@@ -62,9 +70,15 @@ class UmrahJourneyRecord {
         events: (json['events'] as List<dynamic>)
             .map((e) => JourneyEvent.fromJson(e as Map<String, dynamic>))
             .toList(),
-        gpsTrack: (json['gpsTrack'] as List<dynamic>)
-            .map((p) => JourneyPoint.fromJson(p as Map<String, dynamic>))
-            .toList(),
+        gpsTrack: (json['gpsTrack'] as List<dynamic>?)
+            ?.map((p) => JourneyPoint.fromJson(p as Map<String, dynamic>))
+            .toList() ?? [],
+        completed: json['completed'] as bool? ?? true,
+        version: json['version'] as int? ?? 1,
+        stepSummaries: (json['stepSummaries'] as List<dynamic>?)
+                ?.map((s) => StepSummary.fromJson(s as Map<String, dynamic>))
+                .toList() ??
+            [],
       );
 
   Map<String, dynamic> toJson() => {
@@ -74,5 +88,8 @@ class UmrahJourneyRecord {
         if (notes != null) 'notes': notes,
         'events': events.map((e) => e.toJson()).toList(),
         'gpsTrack': gpsTrack.map((p) => p.toJson()).toList(),
+        'completed': completed,
+        'version': version,
+        'stepSummaries': stepSummaries.map((s) => s.toJson()).toList(),
       };
 }

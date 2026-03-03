@@ -4,7 +4,6 @@ import '../data/umrah_data.dart';
 import '../models/location_provider.dart';
 import '../models/progress_provider.dart';
 import '../models/umrah_location.dart';
-import 'guide_flow_screen.dart';
 import 'journey_summary_screen.dart';
 import '../models/journey_history_provider.dart';
 
@@ -32,19 +31,8 @@ class JourneyScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Journey control
-          if (!loc.isJourneyActive)
-            FilledButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Masuk ke Masjid untuk Mulakan Tawaf'),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF1B5E20),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-              onPressed: () => _startJourney(context, loc, prog),
-            )
-          else
+          // Journey control — start moved to Tab 1 "Mulakan Umrah" button
+          if (loc.isJourneyActive)
             OutlinedButton.icon(
               icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
               label: const Text('Selesai Ibadah Umrah', style: TextStyle(color: Colors.red)),
@@ -116,18 +104,6 @@ class JourneyScreen extends StatelessWidget {
 
   bool _hasMissed(ProgressProvider prog) =>
       prog.hasSkippedRounds('tawaf') || prog.hasSkippedRounds('saie');
-
-  Future<void> _startJourney(BuildContext context, LocationProvider loc, ProgressProvider prog) async {
-    await loc.startJourney();
-    if (context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => GuideFlowScreen(steps: umrahSteps, initialStepIndex: prog.stepIndex),
-        ),
-      );
-    }
-  }
 
   Future<void> _endJourney(BuildContext context, LocationProvider loc, ProgressProvider prog) async {
     final history = context.read<JourneyHistoryProvider>();

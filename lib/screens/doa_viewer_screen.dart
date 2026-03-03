@@ -8,6 +8,10 @@ import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
 import '../models/progress_provider.dart';
+import '../models/location_provider.dart';
+import '../models/journey_history_provider.dart';
+import '../models/journey_models.dart';
+import 'journey_summary_screen.dart';
 
 class DoaViewerScreen extends StatefulWidget {
   final List<DoaItem> duas;
@@ -44,6 +48,9 @@ class DoaViewerScreen extends StatefulWidget {
 }
 
 class _DoaViewerScreenState extends State<DoaViewerScreen> {
+  static const _journeyStepIds = {'ihram', 'tawaf', 'solat_tawaf', 'saie', 'tahallul'};
+  bool get _isJourneyStep => _journeyStepIds.contains(widget.stepId);
+
   late PageController _pageCtrl;
   late int _currentIndex;
   bool _repeat = false;
@@ -62,6 +69,21 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
       _completeSub = context.read<AudioProvider>().onTrackComplete.listen((_) => _onTrackComplete());
       // Check for entering new Tawaf/Sa'ie round (asks about previous round)
       _checkEnteringNewRound();
+      // Bug 1: log stepStart event when opening a journey step
+      if (_isJourneyStep) {
+        final loc = context.read<LocationProvider>();
+        if (loc.isJourneyActive) {
+          loc.recordStepStart(widget.stepId!);
+          loc.logEvent(JourneyEvent(
+            eventType: JourneyEventType.stepStart,
+            stepId: widget.stepId,
+            substepId: widget.substepId,
+            timestamp: DateTime.now(),
+            lat: loc.currentPosition?.latitude,
+            lng: loc.currentPosition?.longitude,
+          ));
+        }
+      }
     });
   }
 
@@ -84,6 +106,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final prevRoundKey = '${prefix}_$prevRoundNum';
     
     final prog = context.read<ProgressProvider>();
+    final loc = context.read<LocationProvider>();
     // Only show if the previous round hasn't been marked yet
     if (prog.getRoundStatus(prevRoundKey) != RoundStatus.pending) return;
     
@@ -120,6 +143,16 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     if (!mounted) return;
     if (result == true) {
       await prog.confirmRound(prevRoundKey);
+      // Bug 3: log roundConfirmed for the auto-detected previous round
+      if (loc.isJourneyActive) {
+        await loc.logEvent(JourneyEvent(
+          eventType: JourneyEventType.roundConfirmed,
+          substepId: prevRoundKey,
+          timestamp: DateTime.now(),
+          lat: loc.currentPosition?.latitude,
+          lng: loc.currentPosition?.longitude,
+        ));
+      }
     } else {
       await prog.skipRound(prevRoundKey);
     }
@@ -249,6 +282,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     if (currentStepId == null || currentSubstepId == null) return;
 
     final prog = context.read<ProgressProvider>();
+    final loc = context.read<LocationProvider>();
 
     // If this is a round substep (tawaf/saie), use round key
     if (_isRoundSubstep) {
@@ -291,6 +325,26 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
           if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
         }
         await prog.confirmRound(_roundKey);
+        // Bugs 2, 3, 4: log events and record step end at checkpoint
+        if (loc.isJourneyActive) {
+          await loc.logEvent(JourneyEvent(
+            eventType: JourneyEventType.doaPlayed,
+            stepId: currentStepId,
+            substepId: currentSubstepId,
+            doaTitle: doa.title,
+            timestamp: DateTime.now(),
+            lat: loc.currentPosition?.latitude,
+            lng: loc.currentPosition?.longitude,
+          ));
+          await loc.logEvent(JourneyEvent(
+            eventType: JourneyEventType.roundConfirmed,
+            substepId: _roundKey,
+            timestamp: DateTime.now(),
+            lat: loc.currentPosition?.latitude,
+            lng: loc.currentPosition?.longitude,
+          ));
+          loc.recordStepEnd(currentStepId);
+        }
       } else {
         await prog.skipRound(_roundKey);
       }
@@ -346,12 +400,96 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
         if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
       }
       await prog.confirmRound(stepCompletionKey);
+      // Bugs 2, 4: log doaPlayed event and record step completion at checkpoint
+      if (loc.isJourneyActive) {
+        await loc.logEvent(JourneyEvent(
+          eventType: JourneyEventType.doaPlayed,
+          stepId: currentStepId,
+          substepId: currentSubstepId,
+          doaTitle: doa.title,
+          timestamp: DateTime.now(),
+          lat: loc.currentPosition?.latitude,
+          lng: loc.currentPosition?.longitude,
+        ));
+        loc.recordStepEnd(currentStepId, completed: true);
+      }
     } else {
       await prog.skipRound(stepCompletionKey);
     }
   }
 
-  
+  Future<void> _confirmCancelJourney(BuildContext ctx, LocationProvider loc) async {
+    final history = context.read<JourneyHistoryProvider>();
+    final confirm = await showDialog<bool>(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        title: const Text('Batalkan Umrah?'),
+        content: const Text('Batalkan Umrah ini? Rekod tidak lengkap akan disimpan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Tidak'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ya, Batalkan'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      final record = await loc.snapshotAndClear(notes: 'Umrah tidak lengkap');
+      await history.addOrUpdateJourney(record);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Umrah dibatalkan. Rekod disimpan.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmFinalizeJourney(BuildContext ctx, LocationProvider loc) async {
+    final history = context.read<JourneyHistoryProvider>();
+    final prog = context.read<ProgressProvider>();
+    final confirm = await showDialog<bool>(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        title: const Text('Tamatkan Umrah?'),
+        content: const Text('Tamatkan Umrah? Rekod lengkap akan disimpan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Tidak'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.green[700]),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ya, Tamatkan'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      final record = await loc.finalizeJourney();
+      await history.addOrUpdateJourney(record);
+      await prog.clearProgress();
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => JourneySummaryScreen(
+              startTime: record.startTime,
+              endTime: record.endTime,
+              gpsTrack: record.gpsTrack,
+              events: record.events,
+              journeyId: record.id,
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -466,6 +604,57 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
             onRepeatToggle: () => setState(() => _repeat = !_repeat),
             onPrev: () => _goTo(_currentIndex - 1, autoPlay: true),
             onNext: () => _goTo(_currentIndex + 1, autoPlay: true),
+          ),
+
+          // Persistent journey control button (only for journey steps)
+          Consumer<LocationProvider>(
+            builder: (ctx, loc, _) {
+              if (!_isJourneyStep) return const SizedBox.shrink();
+
+              Widget button;
+              if (!loc.isJourneyActive) {
+                button = FilledButton.icon(
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Mulakan Umrah'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF1B5E20),
+                  ),
+                  onPressed: () async {
+                    if (!loc.gpsAvailable) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                        content: Text('GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                      ));
+                    }
+                    await loc.startJourney();
+                  },
+                );
+              } else if (widget.stepId == 'tahallul') {
+                button = FilledButton.icon(
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Tamatkan Umrah ini'),
+                  style: FilledButton.styleFrom(backgroundColor: Colors.green[700]),
+                  onPressed: () => _confirmFinalizeJourney(ctx, loc),
+                );
+              } else {
+                button = OutlinedButton.icon(
+                  icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+                  label: const Text('Batalkan Umrah', style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                  onPressed: () => _confirmCancelJourney(ctx, loc),
+                );
+              }
+
+              return Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: SafeArea(
+                  top: false,
+                  child: SizedBox(width: double.infinity, child: button),
+                ),
+              );
+            },
           ),
         ],
       ),

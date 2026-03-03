@@ -29,6 +29,7 @@ class LocationProvider extends ChangeNotifier {
   final List<JourneyPoint> _gpsTrack = [];
   final List<JourneyEvent> _events = [];
   DateTime? _journeyStartTime;
+  final Map<String, StepSummary> _stepSummaries = {};
 
   // sampling helpers
   JourneyPoint? _lastSavedPoint;
@@ -246,6 +247,23 @@ class LocationProvider extends ChangeNotifier {
     await _persistTrack();
   }
 
+  void recordStepStart(String stepId, {double? lat, double? lng}) {
+    _stepSummaries[stepId] = StepSummary(
+      stepId: stepId,
+      startedAt: DateTime.now(),
+      lat: lat ?? _currentPosition?.latitude,
+      lng: lng ?? _currentPosition?.longitude,
+    );
+  }
+
+  void recordStepEnd(String stepId, {bool completed = true}) {
+    final s = _stepSummaries[stepId];
+    if (s != null) {
+      s.finishedAt = DateTime.now();
+      s.completed = completed;
+    }
+  }
+
   /// Ends the current journey and returns the raw data.
   /// Use [finalizeJourney] for history‑friendly record.
   Future<({List<JourneyPoint> track, List<JourneyEvent> events, DateTime? start})> endJourney() async {
@@ -320,12 +338,20 @@ class LocationProvider extends ChangeNotifier {
       gpsTrack: List.from(_gpsTrack),
       completed: !incomplete,
       notes: notes,
-      stepSummaries: [],
+      stepSummaries: _stepSummaries.values.toList(),
     );
   }
 
   /// Finalize the journey and clear internal state; returns record ready for history.
   Future<UmrahJourneyRecord> finalizeJourney({String? notes}) async {
+    // Add journeyEnd event and deactivate before snapshotting so endTime is captured
+    _events.add(JourneyEvent(
+      eventType: JourneyEventType.journeyEnd,
+      timestamp: DateTime.now(),
+      lat: _currentPosition?.latitude,
+      lng: _currentPosition?.longitude,
+    ));
+    _isJourneyActive = false;
     final snap = await snapshotJourney(incomplete: false, notes: notes);
     final record = UmrahJourneyRecord(
       id: snap.id,
@@ -339,9 +365,9 @@ class LocationProvider extends ChangeNotifier {
       stepSummaries: snap.stepSummaries,
     );
     // clear
-    _isJourneyActive = false;
     _gpsTrack.clear();
     _events.clear();
+    _stepSummaries.clear();
     _journeyStartTime = null;
     _lastSavedPoint = null;
     _lastSavedTime = null;
@@ -355,6 +381,14 @@ class LocationProvider extends ChangeNotifier {
 
   /// Capture current track as an incomplete record then clear state.
   Future<UmrahJourneyRecord> snapshotAndClear({String? notes}) async {
+    // Add journeyEnd event and deactivate before snapshotting so endTime is captured
+    _events.add(JourneyEvent(
+      eventType: JourneyEventType.journeyEnd,
+      timestamp: DateTime.now(),
+      lat: _currentPosition?.latitude,
+      lng: _currentPosition?.longitude,
+    ));
+    _isJourneyActive = false;
     final snap = await snapshotJourney(incomplete: true, notes: notes);
     final record = UmrahJourneyRecord(
       id: snap.id,
@@ -367,10 +401,10 @@ class LocationProvider extends ChangeNotifier {
       version: 1,
       stepSummaries: snap.stepSummaries,
     );
-    // clear state just like finalize
-    _isJourneyActive = false;
+    // clear state
     _gpsTrack.clear();
     _events.clear();
+    _stepSummaries.clear();
     _journeyStartTime = null;
     _lastSavedPoint = null;
     _lastSavedTime = null;

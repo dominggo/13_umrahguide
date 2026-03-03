@@ -409,6 +409,32 @@ class _GuideFlowTab extends StatelessWidget {
           ),
         ],
 
+        // "Mulakan Umrah" button — visible only when no journey is active
+        Consumer<LocationProvider>(
+          builder: (ctx, loc, _) {
+            if (loc.isJourneyActive) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: FilledButton.icon(
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Mulakan Umrah'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: const Color(0xFF1B5E20),
+                ),
+                onPressed: () async {
+                  if (!loc.gpsAvailable) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                      content: Text('GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                    ));
+                  }
+                  await loc.startJourney();
+                },
+              ),
+            );
+          },
+        ),
+
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.all(16),

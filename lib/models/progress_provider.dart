@@ -89,16 +89,25 @@ class ProgressProvider extends ChangeNotifier {
   bool isRoundComplete(String substepId) =>
       _rounds[substepId] == RoundStatus.confirmed;
 
+  /// Guard against 'tawaf' matching 'tawaf_wida_*' keys.
+  bool _matchesPrefix(String key, String prefix) {
+    if (!key.startsWith(prefix)) return false;
+    if (prefix == 'tawaf' && key.startsWith('tawaf_wida_')) return false;
+    return true;
+  }
+
   /// How many confirmed rounds exist for a given prefix (e.g. "tawaf" or "saie")
   int getConfirmedCount(String prefix) =>
-      _rounds.entries.where((e) => e.key.startsWith(prefix) && e.value == RoundStatus.confirmed).length;
+      _rounds.entries
+          .where((e) => _matchesPrefix(e.key, prefix) && e.value == RoundStatus.confirmed)
+          .length;
 
   /// Whether any rounds with this prefix are skipped
   bool hasSkippedRounds(String prefix) =>
-      _rounds.entries.any((e) => e.key.startsWith(prefix) && e.value == RoundStatus.skipped);
+      _rounds.entries.any((e) => _matchesPrefix(e.key, prefix) && e.value == RoundStatus.skipped);
 
   Future<void> resetRounds(String prefix) async {
-    _rounds.removeWhere((k, v) => k.startsWith(prefix));
+    _rounds.removeWhere((k, v) => _matchesPrefix(k, prefix));
     notifyListeners();
     await _saveRounds();
   }

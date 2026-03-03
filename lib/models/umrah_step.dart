@@ -37,9 +37,12 @@ class DoaItem {
   /// If false, this doa acts as a manual break-point: audio auto-chain stops
   /// here and the user must tap Play manually. Default is true.
   final bool autoPlay;
-  /// Marks this doa as a checkpoint. When the user reaches a checkpoint the
-  /// app will prompt confirmation and on confirmation progress is recorded.
-  final bool isCheckpoint;
+  /// When set, opening this doa starts journey checkpoint N.
+  final int? checkPointStart;
+  /// When set, this doa closes journey checkpoint N.
+  final int? checkPointEnd;
+  /// Label for the next section, shown on the checkpoint-end button.
+  final String? nextLabel;
 
   const DoaItem({
     required this.title,
@@ -48,6 +51,8 @@ class DoaItem {
     this.description,
     this.textFile,
     this.autoPlay = true,
-    this.isCheckpoint = false,
+    this.checkPointStart,
+    this.checkPointEnd,
+    this.nextLabel,
   });
 }

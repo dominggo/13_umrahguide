@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/umrah_step.dart';
 import 'substep_screen.dart';
+import 'doa_viewer_screen.dart';
 
 class StepDetailScreen extends StatelessWidget {
   final UmrahStep step;
+  final bool fromJourney;
 
-  const StepDetailScreen({super.key, required this.step});
+  const StepDetailScreen({
+    super.key,
+    required this.step,
+    this.fromJourney = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -58,21 +64,49 @@ class StepDetailScreen extends StatelessWidget {
                 return _SubStepTile(
                   subStep: sub,
                   number: index + 1,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SubStepScreen(subStep: sub, stepTitle: step.title, stepId: step.id),
-                    ),
-                  ),
+                  onTap: () => _onSubstepTap(context, index),
                 );
               },
             ),
           ),
-
-
         ],
       ),
     );
+  }
+
+  void _onSubstepTap(BuildContext context, int subIndex) {
+    if (fromJourney) {
+      // Compute flat index of the first doa in this substep
+      int flatIndex = 0;
+      for (int i = 0; i < subIndex; i++) {
+        flatIndex += step.subSteps[i].duas.length;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DoaViewerScreen(
+            duas: const [],
+            initialIndex: flatIndex,
+            title: step.title,
+            stepId: step.id,
+            fullStep: step,
+            fromJourney: true,
+          ),
+        ),
+      );
+    } else {
+      final sub = step.subSteps[subIndex];
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SubStepScreen(
+            subStep: sub,
+            stepTitle: step.title,
+            stepId: step.id,
+          ),
+        ),
+      );
+    }
   }
 
   int _countDuas(UmrahStep step) {

@@ -103,7 +103,7 @@ class _JourneyTile extends StatelessWidget {
                 startTime: record.startTime,
                 endTime: record.endTime,
                 gpsTrack: record.gpsTrack,
-                events: record.events,
+                checkpoints: record.checkpoints,
                 journeyId: record.id,
               ),
             ),

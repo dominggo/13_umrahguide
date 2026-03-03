@@ -66,7 +66,7 @@ AppBar extras (all tabs):
 
 **Data layer:** All content hardcoded in `lib/data/umrah_data.dart` as a `const List<UmrahStep>`. No network calls; all assets bundled offline. Asset paths are string literals.
 
-**Auto-play groups:** `DoaViewerScreen` groups consecutive `DoaItem`s where `autoPlay: true` and auto-advances through them; items with `autoPlay: false` act as manual break-points requiring user tap.
+**Auto-play groups:** `DoaViewerScreen` groups consecutive `DoaItem`s where `autoPlay: true` and auto-advances through them; items with `` act as manual break-points requiring user tap.
 
 ## Key Files
 

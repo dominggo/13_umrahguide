@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -10,25 +9,33 @@ import '../models/bookmark_provider.dart';
 import '../models/progress_provider.dart';
 import '../models/location_provider.dart';
 import '../models/journey_history_provider.dart';
-import '../models/journey_models.dart';
 import 'journey_summary_screen.dart';
+
+/// Flat entry combining a substep and one of its duas, for fullStep navigation.
+typedef _FlatEntry = ({UmrahSubStep substep, DoaItem doa});
 
 class DoaViewerScreen extends StatefulWidget {
   final List<DoaItem> duas;
   final int initialIndex;
   final String title;
+
   /// Optional: for round tracking (e.g. "tawaf", "saie")
   final String? roundPrefix;
+
   /// Optional: round number (1-7) for round completion dialog
   final int? roundNumber;
-  /// Step id for bookmark key building (used when lists not provided)
+
+  /// Step id for bookmark key building
   final String? stepId;
-  /// Substep id for bookmark key building (used when lists not provided)
+
+  /// Substep id for bookmark key building (used when fullStep is null)
   final String? substepId;
-  /// Parallel list of step ids for each doa (length == duas.length)
-  final List<String>? stepIds;
-  /// Parallel list of substep ids for each doa
-  final List<String>? substepIds;
+
+  /// When set, navigate across all substeps of this step in flat order.
+  final UmrahStep? fullStep;
+
+  /// When true, shows checkpoint navigation button; set when opened from JourneyScreen.
+  final bool fromJourney;
 
   const DoaViewerScreen({
     super.key,
@@ -39,8 +46,8 @@ class DoaViewerScreen extends StatefulWidget {
     this.roundNumber,
     this.stepId,
     this.substepId,
-    this.stepIds,
-    this.substepIds,
+    this.fullStep,
+    this.fromJourney = false,
   });
 
   @override
@@ -48,403 +55,210 @@ class DoaViewerScreen extends StatefulWidget {
 }
 
 class _DoaViewerScreenState extends State<DoaViewerScreen> {
-  static const _journeyStepIds = {'ihram', 'tawaf', 'solat_tawaf', 'saie', 'tahallul'};
-  bool get _isJourneyStep => _journeyStepIds.contains(widget.stepId);
+  // Flat list of all (substep, doa) pairs when fullStep is provided
+  late final List<_FlatEntry> _flatEntries;
+  // Effective duas list (flat when fullStep set, else widget.duas)
+  late final List<DoaItem> _duas;
 
   late PageController _pageCtrl;
   late int _currentIndex;
-  bool _repeat = false;
-  StreamSubscription<void>? _completeSub;
-  bool _isProgrammatic = false;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
-    _pageCtrl = PageController(initialPage: widget.initialIndex);
 
-    // Subscribe to audio completion for auto-advance
+    if (widget.fullStep != null) {
+      _flatEntries = [
+        for (final sub in widget.fullStep!.subSteps)
+          for (final doa in sub.duas) (substep: sub, doa: doa),
+      ];
+      _duas = _flatEntries.map((e) => e.doa).toList();
+    } else {
+      _flatEntries = [];
+      _duas = widget.duas;
+    }
+
+    _currentIndex = widget.initialIndex.clamp(0, _duas.isEmpty ? 0 : _duas.length - 1);
+    _pageCtrl = PageController(initialPage: _currentIndex);
+
+    // Record checkpoint start for the initial doa
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _completeSub = context.read<AudioProvider>().onTrackComplete.listen((_) => _onTrackComplete());
-      // Check for entering new Tawaf/Sa'ie round (asks about previous round)
-      _checkEnteringNewRound();
-      // Bug 1: log stepStart event when opening a journey step
-      if (_isJourneyStep) {
-        final loc = context.read<LocationProvider>();
-        if (loc.isJourneyActive) {
-          loc.recordStepStart(widget.stepId!);
-          loc.logEvent(JourneyEvent(
-            eventType: JourneyEventType.stepStart,
-            stepId: widget.stepId,
-            substepId: widget.substepId,
-            timestamp: DateTime.now(),
-            lat: loc.currentPosition?.latitude,
-            lng: loc.currentPosition?.longitude,
-          ));
-        }
-      }
+      _maybeRecordCheckpointStart(_currentIndex);
     });
   }
 
   @override
   void dispose() {
-    _completeSub?.cancel();
     _pageCtrl.dispose();
     super.dispose();
   }
 
-  /// Check if entering a new Tawaf/Sa'ie round and show entry notice
-  Future<void> _checkEnteringNewRound() async {
-    if (!mounted || widget.roundPrefix == null || widget.roundNumber == null) return;
-    
-    final currentRound = widget.roundNumber!;
-    if (currentRound <= 1) return; // No previous round to check
-    
-    final prefix = widget.roundPrefix!;
-    final prevRoundNum = currentRound - 1;
-    final prevRoundKey = '${prefix}_$prevRoundNum';
-    
-    final prog = context.read<ProgressProvider>();
-    final loc = context.read<LocationProvider>();
-    // Only show if the previous round hasn't been marked yet
-    if (prog.getRoundStatus(prevRoundKey) != RoundStatus.pending) return;
-    
-    final label = prefix == 'tawaf'
-        ? 'Tawaf Pusingan $prevRoundNum'
-        : prefix == 'tawaf_wida'
-            ? "Tawaf Wida' Pusingan $prevRoundNum"
-            : "Sa'ie Ke-$prevRoundNum";
-    final question = prefix == 'tawaf'
-        ? 'Adakah anda telah lengkapkan tawaf pusingan $prevRoundNum?'
-        : prefix == 'tawaf_wida'
-            ? "Adakah anda telah lengkapkan tawaf wida' pusingan $prevRoundNum?"
-            : "Adakah anda telah lengkapkan sa'ie ke-$prevRoundNum?";
+  // ── Derived helpers ──────────────────────────────────────────────────────
 
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: Text(label),
-        content: Text(question),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Tidak'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya'),
-          ),
-        ],
-      ),
-    );
+  String? get _currentStepId =>
+      widget.fullStep?.id ?? widget.stepId;
 
-    if (!mounted) return;
-    if (result == true) {
-      await prog.confirmRound(prevRoundKey);
-      // Bug 3: log roundConfirmed for the auto-detected previous round
-      if (loc.isJourneyActive) {
-        await loc.logEvent(JourneyEvent(
-          eventType: JourneyEventType.roundConfirmed,
-          substepId: prevRoundKey,
-          timestamp: DateTime.now(),
-          lat: loc.currentPosition?.latitude,
-          lng: loc.currentPosition?.longitude,
-        ));
-      }
-    } else {
-      await prog.skipRound(prevRoundKey);
+  String? get _currentSubstepId {
+    if (widget.fullStep != null && _flatEntries.isNotEmpty) {
+      return _flatEntries[_currentIndex].substep.id;
     }
+    return widget.substepId;
   }
 
-  // ── Auto-play group logic ─────────────────────────────────────────────────
-
-  /// Returns [start, end] indices for the group that contains [index].
-  /// A group is a contiguous sequence of DoaItems where autoPlay == true.
-  (int, int) _groupRange(int index) {
-    final duas = widget.duas;
-
-    // Find start: walk backward while autoPlay is true
-    int start = index;
-    while (start > 0 && duas[start].autoPlay && duas[start - 1].autoPlay) {
-      start--;
+  String get _currentSubstepTitle {
+    if (widget.fullStep != null && _flatEntries.isNotEmpty) {
+      return _flatEntries[_currentIndex].substep.title;
     }
-
-    // Find end: walk forward while autoPlay is true
-    int end = index;
-    while (end < duas.length - 1 && duas[end].autoPlay && duas[end + 1].autoPlay) {
-      end++;
-    }
-
-    return (start, end);
+    return widget.title;
   }
 
-  void _onTrackComplete() {
-    if (!mounted) return;
-    final duas = widget.duas;
-    final curDoa = duas[_currentIndex];
+  DoaItem get _currentDoa => _duas[_currentIndex];
 
-    // If current doa is a divider (autoPlay=false), don't auto-advance
-    if (!curDoa.autoPlay) return;
-
-    final (groupStart, groupEnd) = _groupRange(_currentIndex);
-
-    if (_currentIndex < groupEnd) {
-      // Advance to next in group
-      final next = _currentIndex + 1;
-      if (duas[next].autoPlay) {
-        _goTo(next, autoPlay: true);
-      }
-    } else if (_repeat) {
-      // Repeat: jump to group start
-      _goTo(groupStart, autoPlay: true);
+  String? get _derivedRoundPrefix {
+    final subId = _currentSubstepId;
+    if (subId == null) return null;
+    if (subId.startsWith('tawaf_wida_')) return 'tawaf_wida';
+    if (subId.startsWith('tawaf_')) {
+      final n = int.tryParse(subId.split('_').last);
+      if (n != null && n >= 1 && n <= 7) return 'tawaf';
     }
-    // else: end of group, no repeat — just stop
+    if (subId.startsWith('saie_') && !subId.contains('doa')) {
+      final n = int.tryParse(subId.split('_').last);
+      if (n != null && n >= 1 && n <= 7) return 'saie';
+    }
+    return null;
   }
 
-  Future<void> _goTo(int index, {bool autoPlay = false}) async {
-    if (index < 0 || index >= widget.duas.length) return;
-    _isProgrammatic = true;
+  int? get _derivedRoundNum {
+    final subId = _currentSubstepId;
+    if (subId == null) return null;
+    return int.tryParse(subId.split('_').last);
+  }
+
+  bool get _isRoundSubstep => _derivedRoundPrefix != null;
+
+  String _buildAppBarTitle() {
+    final prefix = _derivedRoundPrefix;
+    final roundNum = _derivedRoundNum;
+    if (prefix == 'saie' && roundNum != null) {
+      return '${widget.fullStep?.title ?? widget.title} $roundNum/7';
+    }
+    return widget.fullStep != null ? _currentSubstepTitle : widget.title;
+  }
+
+  // ── Navigation ───────────────────────────────────────────────────────────
+
+  Future<void> _goTo(int index) async {
+    if (index < 0 || index >= _duas.length) return;
     await _pageCtrl.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
-    _isProgrammatic = false;
-    if (autoPlay) {
-      final doa = widget.duas[index];
-      if (doa.audioPath != null) {
-        await Future.delayed(const Duration(milliseconds: 50));
-        if (mounted) {
-          // grab provider outside of await to satisfy analyzer
-          final audioProv = context.read<AudioProvider>();
-          try {
-            await audioProv.play(doa.audioPath!);
-          } catch (e) {
-            await audioProv.stop();
-            await audioProv.play(doa.audioPath!);
-          }
-        }
-      }
-    }
   }
 
   void _onPageChanged(int i) {
     setState(() => _currentIndex = i);
-    if (!_isProgrammatic) {
-      context.read<AudioProvider>().stop();
-    }
-    // Handle checkpoint-based tracking: only prompt/save when a DoaItem is marked as checkpoint
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleCheckpointForCurrentDoa());
+    context.read<AudioProvider>().stop();
+    _maybeRecordCheckpointStart(i);
   }
 
-  bool get _isRoundSubstep =>
-      widget.roundPrefix != null && widget.roundNumber != null;
-
-  String get _roundKey => '${widget.roundPrefix}_${widget.roundNumber}';
-
-  /// Build AppBar title with round info if applicable
-  String _buildAppBarTitle() {
-    String baseTitle = widget.title;
-    
-    if (!_isRoundSubstep) return baseTitle;
-    
-    final prefix = widget.roundPrefix!;
-    final roundNum = widget.roundNumber!;
-    
-    // Format: "Title x/7" for Saie rounds
-    if (prefix == 'saie') {
-      return "$baseTitle $roundNum/7";
-    }
-    
-    return baseTitle;
-  }
-
-
-
-  /// When the currently visible DoaItem is marked as a checkpoint, prompt the user
-  /// to confirm completion. If confirmed, save progress and update round/step status.
-  Future<void> _handleCheckpointForCurrentDoa() async {
-    if (!mounted) return;
-
-    final doa = widget.duas[_currentIndex];
-    if (!doa.isCheckpoint) return;
-
-    // Resolve current step/substep ids same as _saveProgress
-    String? currentStepId = widget.stepIds != null && _currentIndex < widget.stepIds!.length
-        ? widget.stepIds![_currentIndex]
-        : widget.stepId;
-    String? currentSubstepId = widget.substepIds != null && _currentIndex < widget.substepIds!.length
-        ? widget.substepIds![_currentIndex]
-        : widget.substepId;
-
-    if (currentStepId == null || currentSubstepId == null) return;
-
-    final prog = context.read<ProgressProvider>();
+  /// Records checkPointStart for doa at [index] if journey is active.
+  void _maybeRecordCheckpointStart(int index) {
+    if (index < 0 || index >= _duas.length) return;
+    final doa = _duas[index];
+    if (doa.checkPointStart == null) return;
     final loc = context.read<LocationProvider>();
+    if (!loc.isJourneyActive) return;
+    final substepTitle = widget.fullStep != null && _flatEntries.isNotEmpty
+        ? _flatEntries[index].substep.title
+        : widget.title;
+    loc.recordCheckpointStart(doa.checkPointStart!, substepTitle);
+  }
 
-    // If this is a round substep (tawaf/saie), use round key
-    if (_isRoundSubstep) {
-      // If already recorded, skip
-      if (prog.getRoundStatus(_roundKey) != RoundStatus.pending) return;
+  // ── Checkpoint end button handler ────────────────────────────────────────
 
-      final prefix = widget.roundPrefix!;
-      final num = widget.roundNumber!;
-      final label = prefix == 'tawaf'
-          ? 'Tawaf Pusingan $num'
-          : prefix == 'tawaf_wida'
-              ? "Tawaf Wida' Pusingan $num"
-              : "Sa'ie Ke-$num";
-      final question = prefix == 'tawaf'
-          ? 'Adakah anda telah lengkapkan tawaf pusingan $num?'
-          : prefix == 'tawaf_wida'
-              ? "Adakah anda telah lengkapkan tawaf wida' pusingan $num?"
-              : "Adakah anda telah lengkapkan sa'ie ke-$num?";
+  bool get _showCheckpointEndButton {
+    if (!widget.fromJourney) return false;
+    if (_duas.isEmpty) return false;
+    return _currentDoa.checkPointEnd != null;
+  }
 
-      final result = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: Text(label),
-          content: Text(question),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ya')),
-          ],
-        ),
-      );
+  /// Tapping the checkpoint-end button: show confirmation dialog, then record end
+  /// and navigate to next section (substep with checkPointStart == num+1).
+  Future<void> _handleCheckpointEnd() async {
+    final doa = _currentDoa;
+    final endNum = doa.checkPointEnd!;
+    final loc = context.read<LocationProvider>();
+    if (!loc.isJourneyActive) return;
 
-      if (!mounted) return;
-      if (result == true) {
-        // Save progress for this substep then confirm round
-        final stepIndex = umrahSteps.indexWhere((s) => s.id == currentStepId);
-        if (stepIndex != -1) {
-          final step = umrahSteps[stepIndex];
-          final subIndex = step.subSteps.indexWhere((s) => s.id == currentSubstepId);
-          if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
-        }
-        await prog.confirmRound(_roundKey);
-        // Bugs 2, 3, 4: log events and record step end at checkpoint
-        if (loc.isJourneyActive) {
-          await loc.logEvent(JourneyEvent(
-            eventType: JourneyEventType.doaPlayed,
-            stepId: currentStepId,
-            substepId: currentSubstepId,
-            doaTitle: doa.title,
-            timestamp: DateTime.now(),
-            lat: loc.currentPosition?.latitude,
-            lng: loc.currentPosition?.longitude,
-          ));
-          await loc.logEvent(JourneyEvent(
-            eventType: JourneyEventType.roundConfirmed,
-            substepId: _roundKey,
-            timestamp: DateTime.now(),
-            lat: loc.currentPosition?.latitude,
-            lng: loc.currentPosition?.longitude,
-          ));
-          loc.recordStepEnd(currentStepId);
-        }
-      } else {
-        await prog.skipRound(_roundKey);
-      }
+    final nextLabel = doa.nextLabel ?? '';
+    final isFinish = nextLabel == 'Selesai Umrah';
 
+    if (isFinish) {
+      await _confirmFinalizeJourney(context, loc);
       return;
     }
 
-    // Non-round checkpoints: handle specific step completions (ihram, solat_tawaf, tahallul)
-    final stepCompletionKey = '${currentStepId}_completed';
-    if (prog.getRoundStatus(stepCompletionKey) == RoundStatus.confirmed) return;
-
-    String? title;
-    String? message;
-    if (currentStepId == 'ihram') {
-      title = 'Ihram Selesai';
-      message = 'Adakah anda telah melengkapkan Ihram?';
-    } else if (currentStepId == 'solat_tawaf') {
-      title = 'Solat Sunat Tawaf Selesai';
-      message = 'Adakah anda telah melengkapkan Solat Sunat Tawaf?';
-    } else if (currentStepId == 'tahallul') {
-      title = 'Tahalul Selesai';
-      message = 'Adakah anda telah melengkapkan Tahalul?';
-    } else {
-      // Generic checkpoint: save progress without extra confirmation key if not special
-      final stepIndex = umrahSteps.indexWhere((s) => s.id == currentStepId);
-      if (stepIndex != -1) {
-        final step = umrahSteps[stepIndex];
-        final subIndex = step.subSteps.indexWhere((s) => s.id == currentSubstepId);
-        if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
-      }
-      return;
-    }
-
-    final result = await showDialog<bool>(
+    // Confirm dialog
+    final substepName = _currentSubstepTitle;
+    final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        title: Text(title ?? ''),
-        content: Text(message ?? ''),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ya')),
-        ],
-      ),
-    );
-
-    if (!mounted) return;
-    if (result == true) {
-      final stepIndex = umrahSteps.indexWhere((s) => s.id == currentStepId);
-      if (stepIndex != -1) {
-        final step = umrahSteps[stepIndex];
-        final subIndex = step.subSteps.indexWhere((s) => s.id == currentSubstepId);
-        if (subIndex != -1) await prog.saveProgress(stepIndex, subIndex);
-      }
-      await prog.confirmRound(stepCompletionKey);
-      // Bugs 2, 4: log doaPlayed event and record step completion at checkpoint
-      if (loc.isJourneyActive) {
-        await loc.logEvent(JourneyEvent(
-          eventType: JourneyEventType.doaPlayed,
-          stepId: currentStepId,
-          substepId: currentSubstepId,
-          doaTitle: doa.title,
-          timestamp: DateTime.now(),
-          lat: loc.currentPosition?.latitude,
-          lng: loc.currentPosition?.longitude,
-        ));
-        loc.recordStepEnd(currentStepId, completed: true);
-      }
-    } else {
-      await prog.skipRound(stepCompletionKey);
-    }
-  }
-
-  Future<void> _confirmCancelJourney(BuildContext ctx, LocationProvider loc) async {
-    final history = context.read<JourneyHistoryProvider>();
-    final confirm = await showDialog<bool>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        title: const Text('Batalkan Umrah?'),
-        content: const Text('Batalkan Umrah ini? Rekod tidak lengkap akan disimpan.'),
+        title: Text('Selesai $substepName?'),
+        content: Text('Adakah anda telah selesai $substepName?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Tidak'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Tidak')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, Batalkan'),
-          ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ya')),
         ],
       ),
     );
-    if (confirm == true && mounted) {
-      final record = await loc.snapshotAndClear(notes: 'Umrah tidak lengkap');
-      await history.addOrUpdateJourney(record);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Umrah dibatalkan. Rekod disimpan.')),
-        );
+
+    if (confirmed != true || !mounted) return;
+    await loc.recordCheckpointEnd(endNum);
+
+    // Navigate: find doa with checkPointStart == endNum + 1 in fullStep or umrahSteps
+    final nextNum = endNum + 1;
+    if (widget.fullStep != null) {
+      // Try to find within current fullStep
+      for (int fi = 0; fi < _flatEntries.length; fi++) {
+        if (_flatEntries[fi].doa.checkPointStart == nextNum) {
+          await _goTo(fi);
+          return;
+        }
+      }
+    }
+
+    // Search across all umrahSteps
+    for (final step in umrahSteps) {
+      int flatOffset = 0;
+      for (final sub in step.subSteps) {
+        for (int di = 0; di < sub.duas.length; di++) {
+          if (sub.duas[di].checkPointStart == nextNum) {
+            if (!mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DoaViewerScreen(
+                  duas: const [],
+                  initialIndex: flatOffset + di,
+                  title: step.title,
+                  stepId: step.id,
+                  fullStep: step,
+                  fromJourney: true,
+                ),
+              ),
+            );
+            return;
+          }
+          flatOffset++;
+        }
       }
     }
   }
@@ -482,7 +296,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
               startTime: record.startTime,
               endTime: record.endTime,
               gpsTrack: record.gpsTrack,
-              events: record.events,
+              checkpoints: record.checkpoints,
               journeyId: record.id,
             ),
           ),
@@ -493,23 +307,36 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.duas.length;
+    final total = _duas.length;
     final prog = context.watch<ProgressProvider>();
     final bm = context.watch<BookmarkProvider>();
 
-    final currentDoa = widget.duas[_currentIndex];
-    String? curStep = widget.stepIds != null && _currentIndex < widget.stepIds!.length
-        ? widget.stepIds![_currentIndex]
-        : widget.stepId;
-    String? curSub = widget.substepIds != null && _currentIndex < widget.substepIds!.length
-        ? widget.substepIds![_currentIndex]
-        : widget.substepId;
-    final bmKey = curStep != null && curSub != null
+    final currentDoa = total > 0 ? _duas[_currentIndex] : null;
+    final curStep = _currentStepId;
+    final curSub = _currentSubstepId;
+    final bmKey = curStep != null && curSub != null && currentDoa != null
         ? BookmarkProvider.keyFor(curStep, curSub, currentDoa.title)
         : null;
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: 88,
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            IconButton(
+              icon: const Icon(Icons.home_outlined),
+              tooltip: 'Utama',
+              onPressed: () =>
+                  Navigator.popUntil(context, (route) => route.isFirst),
+            ),
+          ],
+        ),
         title: Text(_buildAppBarTitle()),
         actions: [
           // Round indicator for Tawaf/Sa'ie
@@ -517,7 +344,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: _RoundStatusIndicator(
-                prefix: widget.roundPrefix!,
+                prefix: _derivedRoundPrefix!,
                 total: 7,
                 progressProvider: prog,
               ),
@@ -525,18 +352,12 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
           // Bookmark
           if (bmKey != null)
             IconButton(
-              icon: Icon(bm.isBookmarked(bmKey) ? Icons.bookmark : Icons.bookmark_border),
+              icon: Icon(bm.isBookmarked(bmKey)
+                  ? Icons.bookmark
+                  : Icons.bookmark_border),
               tooltip: bm.isBookmarked(bmKey) ? 'Buang Simpanan' : 'Simpan Doa',
               onPressed: () => bm.toggle(bmKey),
             ),
-          // AutoPlay toggle
-          IconButton(
-            icon: Icon(prog.autoPlayEnabled ? Icons.play_arrow : Icons.play_disabled),
-            tooltip: prog.autoPlayEnabled ? 'Lumpuhkan AutoPlay' : 'Dayakan AutoPlay',
-            onPressed: () {
-              prog.autoPlayEnabled = !prog.autoPlayEnabled;
-            },
-          ),
           // Counter
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -549,115 +370,149 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Page indicator dots
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                total > 10 ? 1 : total,
-                (i) => total > 10
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Text(
-                          '${_currentIndex + 1}/$total',
-                          style: const TextStyle(color: Color(0xFF1B5E20)),
-                        ),
-                      )
-                    : AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: i == _currentIndex ? 20 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          color: i == _currentIndex
-                              ? const Color(0xFF1B5E20)
-                              : const Color(0xFF1B5E20).withValues(alpha: 0.3),
-                        ),
-                      ),
-              ),
-            ),
-          ),
-
-          // Doa pages
-          Expanded(
-            child: PageView.builder(
-              controller: _pageCtrl,
-              itemCount: total,
-              onPageChanged: _onPageChanged,
-              itemBuilder: (context, index) {
-                return _DoaPage(doa: widget.duas[index]);
-              },
-            ),
-          ),
-
-          // Navigation bar
-          _NavBar(
-            currentIndex: _currentIndex,
-            total: total,
-            doa: widget.duas[_currentIndex],
-            repeat: _repeat,
-            onRepeatToggle: () => setState(() => _repeat = !_repeat),
-            onPrev: () => _goTo(_currentIndex - 1, autoPlay: true),
-            onNext: () => _goTo(_currentIndex + 1, autoPlay: true),
-          ),
-
-          // Persistent journey control button (only for journey steps)
-          Consumer<LocationProvider>(
-            builder: (ctx, loc, _) {
-              if (!_isJourneyStep) return const SizedBox.shrink();
-
-              Widget button;
-              if (!loc.isJourneyActive) {
-                button = FilledButton.icon(
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Mulakan Umrah'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B5E20),
+      body: total == 0
+          ? const Center(child: Text('Tiada doa'))
+          : Column(
+              children: [
+                // Page indicator dots
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      total > 10 ? 1 : total,
+                      (i) => total > 10
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              child: Text(
+                                '${_currentIndex + 1}/$total',
+                                style: const TextStyle(color: Color(0xFF1B5E20)),
+                              ),
+                            )
+                          : AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.symmetric(horizontal: 3),
+                              width: i == _currentIndex ? 20 : 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4),
+                                color: i == _currentIndex
+                                    ? const Color(0xFF1B5E20)
+                                    : const Color(0xFF1B5E20).withValues(alpha: 0.3),
+                              ),
+                            ),
+                    ),
                   ),
-                  onPressed: () async {
-                    if (!loc.gpsAvailable) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                        content: Text('GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                      ));
-                    }
-                    await loc.startJourney();
-                  },
-                );
-              } else if (widget.stepId == 'tahallul') {
-                button = FilledButton.icon(
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text('Tamatkan Umrah ini'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green[700]),
-                  onPressed: () => _confirmFinalizeJourney(ctx, loc),
-                );
-              } else {
-                button = OutlinedButton.icon(
-                  icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
-                  label: const Text('Batalkan Umrah', style: TextStyle(color: Colors.red)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                  onPressed: () => _confirmCancelJourney(ctx, loc),
-                );
-              }
-
-              return Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: SafeArea(
-                  top: false,
-                  child: SizedBox(width: double.infinity, child: button),
                 ),
-              );
-            },
-          ),
-        ],
+
+                // Doa pages
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageCtrl,
+                    itemCount: total,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) {
+                      return _DoaPage(doa: _duas[index]);
+                    },
+                  ),
+                ),
+
+                // Navigation bar + optional action row
+                SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _NavBar(
+                        canGoPrev: _currentIndex > 0,
+                        canGoNext: _currentIndex < _duas.length - 1 &&
+                            !_showCheckpointEndButton,
+                        doa: currentDoa!,
+                        onPrev: () => _goTo(_currentIndex - 1),
+                        onNext: () => _goTo(_currentIndex + 1),
+                      ),
+                      // Action row
+                      Consumer<LocationProvider>(
+                        builder: (ctx, loc, _) {
+                          final showCpEnd = _showCheckpointEndButton && loc.isJourneyActive;
+                          final showStart = currentDoa.checkPointStart == 1 && !loc.isJourneyActive;
+
+                          if (!showCpEnd && !showStart) return const SizedBox.shrink();
+
+                          return Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                            child: Row(
+                              children: [
+                                if (showStart)
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      icon: const Icon(Icons.play_arrow, size: 16),
+                                      label: const Text('Mulakan Umrah',
+                                          style: TextStyle(fontSize: 12)),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: const Color(0xFF1B5E20),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      onPressed: () async {
+                                        if (!loc.gpsAvailable) {
+                                          ScaffoldMessenger.of(ctx).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                                              ));
+                                        }
+                                        await loc.startJourney();
+                                        if (mounted) {
+                                          _maybeRecordCheckpointStart(_currentIndex);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                if (showCpEnd)
+                                  Expanded(
+                                    child: _buildCheckpointEndButton(currentDoa),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildCheckpointEndButton(DoaItem doa) {
+    final nextLabel = doa.nextLabel ?? '';
+    final isFinish = nextLabel == 'Selesai Umrah';
+
+    if (isFinish) {
+      return FilledButton.icon(
+        icon: const Icon(Icons.check_circle_outline, size: 16),
+        label: const Text('Tamatkan Umrah', style: TextStyle(fontSize: 12)),
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.green[700],
+          visualDensity: VisualDensity.compact,
+        ),
+        onPressed: _handleCheckpointEnd,
+      );
+    }
+
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.arrow_forward, size: 16),
+      label: Text(
+        nextLabel.isNotEmpty ? 'Mulakan $nextLabel' : 'Seterusnya',
+        style: const TextStyle(fontSize: 12),
       ),
+      style: OutlinedButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+      ),
+      onPressed: _handleCheckpointEnd,
     );
   }
 }
@@ -682,7 +537,6 @@ class _DoaPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
           if (!doa.autoPlay)
             Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -695,17 +549,19 @@ class _DoaPage extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.pause_circle_outline, color: Colors.orange, size: 16),
+                  Icon(Icons.pause_circle_outline,
+                      color: Colors.orange, size: 16),
                   SizedBox(width: 6),
-                  Text('Jeda — main secara manual', style: TextStyle(fontSize: 12, color: Colors.orange)),
+                  Text('Jeda — main secara manual',
+                      style: TextStyle(fontSize: 12, color: Colors.orange)),
                 ],
               ),
             ),
-
           if (doa.imagePath != null)
             Card(
               elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               clipBehavior: Clip.hardEdge,
               child: Image.asset(
                 doa.imagePath!,
@@ -718,9 +574,11 @@ class _DoaPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.grey),
+                        Icon(Icons.image_not_supported_outlined,
+                            size: 48, color: Colors.grey),
                         SizedBox(height: 8),
-                        Text('Gambar tidak dijumpai', style: TextStyle(color: Colors.grey)),
+                        Text('Gambar tidak dijumpai',
+                            style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -736,10 +594,10 @@ class _DoaPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
-                child: Icon(Icons.menu_book, size: 64, color: Color(0xFF1B5E20)),
+                child:
+                    Icon(Icons.menu_book, size: 64, color: Color(0xFF1B5E20)),
               ),
             ),
-
           if (doa.description != null) ...[
             const SizedBox(height: 16),
             Container(
@@ -749,10 +607,10 @@ class _DoaPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey[200]!),
               ),
-              child: Text(doa.description!, style: const TextStyle(fontSize: 14, height: 1.6)),
+              child: Text(doa.description!,
+                  style: const TextStyle(fontSize: 14, height: 1.6)),
             ),
           ],
-
           if (doa.textFile != null) ...[
             const SizedBox(height: 16),
             FutureBuilder<String>(
@@ -763,7 +621,6 @@ class _DoaPage extends StatelessWidget {
               },
             ),
           ],
-
           const SizedBox(height: 80),
         ],
       ),
@@ -772,20 +629,16 @@ class _DoaPage extends StatelessWidget {
 }
 
 class _NavBar extends StatelessWidget {
-  final int currentIndex;
-  final int total;
+  final bool canGoPrev;
+  final bool canGoNext;
   final DoaItem doa;
-  final bool repeat;
-  final VoidCallback onRepeatToggle;
   final VoidCallback onPrev;
   final VoidCallback onNext;
 
   const _NavBar({
-    required this.currentIndex,
-    required this.total,
+    required this.canGoPrev,
+    required this.canGoNext,
     required this.doa,
-    required this.repeat,
-    required this.onRepeatToggle,
     required this.onPrev,
     required this.onNext,
   });
@@ -801,67 +654,59 @@ class _NavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -4)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4)),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            // Repeat toggle
-            IconButton(
-              icon: Icon(
-                repeat ? Icons.repeat_one : Icons.repeat,
-                color: repeat ? const Color(0xFF1B5E20) : Colors.grey,
-              ),
-              tooltip: repeat ? 'Ulang: Hidup' : 'Ulang: Mati',
-              onPressed: onRepeatToggle,
+      child: Row(
+        children: [
+          // Skip previous
+          IconButton.filled(
+            icon: const Icon(Icons.skip_previous),
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  canGoPrev ? const Color(0xFF1B5E20) : Colors.grey[300],
+              iconSize: 20,
             ),
+            onPressed: canGoPrev ? onPrev : null,
+          ),
 
-            // Skip previous
-            IconButton.filled(
-              icon: const Icon(Icons.skip_previous),
-              style: IconButton.styleFrom(
-                backgroundColor: currentIndex > 0 ? const Color(0xFF1B5E20) : Colors.grey[300],
-                iconSize: 20,
-              ),
-              onPressed: currentIndex > 0 ? onPrev : null,
-            ),
-
-            // Audio play button (center)
-            Expanded(
-              child: Center(
-                child: hasAudio
-                    ? FilledButton.icon(
-                        icon: Icon(isPlaying ? Icons.pause : Icons.volume_up),
-                        label: Text(isPlaying ? 'Berhenti' : 'Dengar Doa'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: isPlaying ? Colors.orange : const Color(0xFF1B5E20),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        ),
-                        onPressed: () => context.read<AudioProvider>().play(doa.audioPath!),
-                      )
-                    : const Text(
-                        'Tiada audio',
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
+          // Audio play button (center)
+          Expanded(
+            child: Center(
+              child: hasAudio
+                  ? FilledButton.icon(
+                      icon: Icon(isPlaying ? Icons.pause : Icons.volume_up),
+                      label: Text(isPlaying ? 'Berhenti' : 'Dengar Doa'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor:
+                            isPlaying ? Colors.orange : const Color(0xFF1B5E20),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
                       ),
-              ),
+                      onPressed: () =>
+                          context.read<AudioProvider>().play(doa.audioPath!),
+                    )
+                  : const Text(
+                      'Tiada audio',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
             ),
+          ),
 
-            // Skip next
-            IconButton.filled(
-              icon: const Icon(Icons.skip_next),
-              style: IconButton.styleFrom(
-                backgroundColor: currentIndex < total - 1 ? const Color(0xFF1B5E20) : Colors.grey[300],
-                iconSize: 20,
-              ),
-              onPressed: currentIndex < total - 1 ? onNext : null,
+          // Skip next
+          IconButton.filled(
+            icon: const Icon(Icons.skip_next),
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  canGoNext ? const Color(0xFF1B5E20) : Colors.grey[300],
+              iconSize: 20,
             ),
-
-            // Spacer to balance repeat icon
-            const SizedBox(width: 40),
-          ],
-        ),
+            onPressed: canGoNext ? onNext : null,
+          ),
+        ],
       ),
     );
   }
@@ -885,7 +730,8 @@ class _RoundStatusIndicator extends StatelessWidget {
       onTap: () {
         final confirmed = progressProvider.getConfirmedCount(prefix);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${prefix == 'tawaf' ? 'Tawaf' : prefix == 'tawaf_wida' ? "Tawaf Wida'" : "Sa'ie"}: $confirmed/$total selesai'),
+          content: Text(
+              '${prefix == 'tawaf' ? 'Tawaf' : prefix == 'tawaf_wida' ? "Tawaf Wida'" : "Sa'ie"}: $confirmed/$total selesai'),
           duration: const Duration(seconds: 2),
         ));
       },

@@ -14,13 +14,12 @@ import 'package:printing/printing.dart';
 import '../models/journey_models.dart';
 import '../models/journey_history_provider.dart';
 import '../models/progress_provider.dart';
-import '../data/umrah_data.dart';
 
 class JourneySummaryScreen extends StatefulWidget {
   final DateTime startTime;
   final DateTime endTime;
   final List<JourneyPoint> gpsTrack;
-  final List<JourneyEvent> events;
+  final List<CheckpointRecord> checkpoints;
   final String? journeyId; // non-null when viewing from history
 
   const JourneySummaryScreen({
@@ -28,7 +27,7 @@ class JourneySummaryScreen extends StatefulWidget {
     required this.startTime,
     required this.endTime,
     required this.gpsTrack,
-    required this.events,
+    required this.checkpoints,
     this.journeyId,
   });
 
@@ -47,9 +46,6 @@ class _JourneySummaryScreenState extends State<JourneySummaryScreen> {
   }
 
   Future<void> _autoSave() async {
-    // previous code handled save when entering summary; under new scheme the
-    // record is already created by LocationProvider.finalizeJourney and stored
-    // in history. we only need to clear progress once.
     if (_saved) return;
     _saved = true;
     final prog = context.read<ProgressProvider>();
@@ -160,26 +156,21 @@ class _JourneySummaryScreenState extends State<JourneySummaryScreen> {
                 ),
               ),
 
-            // Step timeline
+            // Checkpoint timeline
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Rekod Langkah', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Rekod Perjalanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  ...List.generate(umrahSteps.length, (i) {
-                    final step = umrahSteps[i];
-                    final stepEvents = widget.events.where((e) => e.stepId == step.id).toList();
-                    final doaCount = stepEvents.where((e) => e.eventType == JourneyEventType.doaPlayed).length;
-                    return _StepSummaryTile(
-                      index: i + 1,
-                      title: step.title,
-                      doaCount: doaCount,
-                      stepId: step.id,
-                      events: widget.events,
-                    );
-                  }),
+                  if (widget.checkpoints.isEmpty)
+                    const Text(
+                      'Tiada rekod checkpoint.',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    )
+                  else
+                    ...widget.checkpoints.map((cp) => _CheckpointTile(cp: cp)),
                 ],
               ),
             ),
@@ -247,36 +238,48 @@ class _JourneySummaryScreenState extends State<JourneySummaryScreen> {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('Panduan Umrah', style: pw.TextStyle(font: boldFont, color: PdfColors.white, fontSize: 18)),
-                        pw.Text('Ringkasan Perjalanan', style: pw.TextStyle(font: font, color: PdfColor.fromHex('#CCFFFFFF'), fontSize: 12)),
+                        pw.Text('Panduan Umrah',
+                            style: pw.TextStyle(font: boldFont, color: PdfColors.white, fontSize: 18)),
+                        pw.Text('Ringkasan Perjalanan',
+                            style: pw.TextStyle(
+                                font: font, color: PdfColor.fromHex('#CCFFFFFF'), fontSize: 12)),
                       ],
                     ),
                   ],
                 ),
               ),
               pw.SizedBox(height: 20),
-              pw.Text('Tarikh Mula: ${_formatDate(widget.startTime)}', style: pw.TextStyle(font: font)),
-              pw.Text('Tarikh Tamat: ${_formatDate(widget.endTime)}', style: pw.TextStyle(font: font)),
+              pw.Text('Tarikh Mula: ${_formatDate(widget.startTime)}',
+                  style: pw.TextStyle(font: font)),
+              pw.Text('Tarikh Tamat: ${_formatDate(widget.endTime)}',
+                  style: pw.TextStyle(font: font)),
               pw.Text('Tempoh: ${_formatDuration(_duration)}', style: pw.TextStyle(font: font)),
-              pw.Text('Jarak: ${_distanceKm.toStringAsFixed(2)} km', style: pw.TextStyle(font: font)),
+              pw.Text('Jarak: ${_distanceKm.toStringAsFixed(2)} km',
+                  style: pw.TextStyle(font: font)),
               pw.SizedBox(height: 20),
-              pw.Text('Rekod Langkah', style: pw.TextStyle(font: boldFont, fontSize: 14)),
+              pw.Text('Rekod Checkpoint', style: pw.TextStyle(font: boldFont, fontSize: 14)),
               pw.SizedBox(height: 10),
-              ...List.generate(umrahSteps.length, (i) {
-                final step = umrahSteps[i];
-                return pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 6),
-                  child: pw.Row(
-                    children: [
-                      pw.Text('${i + 1}. ', style: pw.TextStyle(font: boldFont)),
-                      pw.Text(step.title, style: pw.TextStyle(font: font)),
-                    ],
-                  ),
-                );
-              }),
+              ...widget.checkpoints.map((cp) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 6),
+                    child: pw.Row(
+                      children: [
+                        pw.Text('${cp.checkpointNum}. ', style: pw.TextStyle(font: boldFont)),
+                        pw.Text(cp.name, style: pw.TextStyle(font: font)),
+                        pw.Spacer(),
+                        pw.Text(
+                          cp.isCompleted ? 'Selesai' : 'Tidak selesai',
+                          style: pw.TextStyle(
+                              font: font,
+                              color: cp.isCompleted ? PdfColors.green900 : PdfColors.orange),
+                        ),
+                      ],
+                    ),
+                  )),
               pw.SizedBox(height: 30),
               pw.Center(
-                child: pw.Text('Alhamdulillah — Umrah Selesai', style: pw.TextStyle(font: boldFont, fontSize: 16, color: PdfColors.green900)),
+                child: pw.Text('Alhamdulillah — Umrah Selesai',
+                    style: pw.TextStyle(
+                        font: boldFont, fontSize: 16, color: PdfColors.green900)),
               ),
             ],
           ),
@@ -340,7 +343,9 @@ class _SummaryHeader extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              _StatChip(label: 'Tempoh', value: '${duration.inHours}j ${duration.inMinutes.remainder(60)}min'),
+              _StatChip(
+                  label: 'Tempoh',
+                  value: '${duration.inHours}j ${duration.inMinutes.remainder(60)}min'),
               const SizedBox(width: 12),
               _StatChip(label: 'Jarak', value: '${distanceKm.toStringAsFixed(2)} km'),
             ],
@@ -379,63 +384,67 @@ class _StatChip extends StatelessWidget {
       child: Column(
         children: [
           Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10)),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
   }
 }
 
-class _StepSummaryTile extends StatelessWidget {
-  final int index;
-  final String title;
-  final int doaCount;
-  final String stepId;
-  final List<JourneyEvent> events;
+class _CheckpointTile extends StatelessWidget {
+  final CheckpointRecord cp;
 
-  const _StepSummaryTile({
-    required this.index,
-    required this.title,
-    required this.doaCount,
-    required this.stepId,
-    required this.events,
-  });
+  const _CheckpointTile({required this.cp});
 
   @override
   Widget build(BuildContext context) {
-    final stepEvent = events.where((e) => e.stepId == stepId && e.eventType == JourneyEventType.stepStart).firstOrNull;
+    final missed = !cp.isCompleted;
+    final startFmt = _fmt(cp.startTime);
+    final endFmt = cp.endTime != null ? _fmt(cp.endTime!) : null;
+    final dur = cp.endTime?.difference(cp.startTime);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: const Color(0xFF1B5E20),
-            child: Text('$index', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            backgroundColor: missed ? Colors.orange : const Color(0xFF1B5E20),
+            child: Text(
+              '${cp.checkpointNum}',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                if (stepEvent != null)
+                Text(cp.name,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: missed ? Colors.orange[800] : null)),
+                Text(
+                  missed
+                      ? 'Mula: $startFmt — Tidak Diselesaikan'
+                      : 'Mula: $startFmt — Tamat: ${endFmt ?? '-'}',
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+                if (dur != null)
                   Text(
-                    _fmt(stepEvent.timestamp),
+                    'Tempoh: ${dur.inMinutes}min',
                     style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
               ],
             ),
           ),
-          if (doaCount > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text('$doaCount doa', style: const TextStyle(fontSize: 11, color: Color(0xFF1B5E20))),
-            ),
+          if (missed)
+            const Icon(Icons.warning_amber, color: Colors.orange, size: 16),
         ],
       ),
     );

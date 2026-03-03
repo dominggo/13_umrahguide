@@ -27,9 +27,8 @@ class LocationProvider extends ChangeNotifier {
 
   // Journey recording
   final List<JourneyPoint> _gpsTrack = [];
-  final List<JourneyEvent> _events = [];
+  final List<CheckpointRecord> _checkpoints = [];
   DateTime? _journeyStartTime;
-  final Map<String, StepSummary> _stepSummaries = {};
 
   // sampling helpers
   JourneyPoint? _lastSavedPoint;
@@ -47,8 +46,28 @@ class LocationProvider extends ChangeNotifier {
   bool get gpsAvailable => _gpsAvailable;
   bool get isJourneyActive => _isJourneyActive;
   List<JourneyPoint> get gpsTrack => List.unmodifiable(_gpsTrack);
-  List<JourneyEvent> get events => List.unmodifiable(_events);
+  List<CheckpointRecord> get checkpoints => List.unmodifiable(_checkpoints);
   DateTime? get journeyStartTime => _journeyStartTime;
+
+  /// Last checkpoint that has startTime but no endTime yet (in-progress).
+  CheckpointRecord? get lastIncompleteCheckpoint {
+    for (int i = _checkpoints.length - 1; i >= 0; i--) {
+      if (!_checkpoints[i].isCompleted) return _checkpoints[i];
+    }
+    return null;
+  }
+
+  /// Checkpoints that have been started (whether completed or not).
+  bool isCheckpointStarted(int num) =>
+      _checkpoints.any((c) => c.checkpointNum == num);
+
+  /// Whether checkpoint N has been fully completed.
+  bool isCheckpointCompleted(int num) =>
+      _checkpoints.any((c) => c.checkpointNum == num && c.isCompleted);
+
+  /// Checkpoints that were started but never ended.
+  List<CheckpointRecord> get missedCheckpoints =>
+      _checkpoints.where((c) => !c.isCompleted).toList();
 
   LocationProvider() {
     _initConnectivity();
@@ -61,7 +80,6 @@ class LocationProvider extends ChangeNotifier {
     _isJourneyActive = prefs.getBool(_journeyActiveKey) ?? false;
     if (_isJourneyActive) {
       await _loadPersistentTrack();
-      // restart autosave loop
       _startAutosaveTimer();
     }
     notifyListeners();
@@ -75,11 +93,13 @@ class LocationProvider extends ChangeNotifier {
       final map = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
       if (map['track'] is List) {
         _gpsTrack.clear();
-        _gpsTrack.addAll((map['track'] as List).map((e) => JourneyPoint.fromJson(e as Map<String, dynamic>)));
+        _gpsTrack.addAll((map['track'] as List)
+            .map((e) => JourneyPoint.fromJson(e as Map<String, dynamic>)));
       }
-      if (map['events'] is List) {
-        _events.clear();
-        _events.addAll((map['events'] as List).map((e) => JourneyEvent.fromJson(e as Map<String, dynamic>)));
+      if (map['checkpoints'] is List) {
+        _checkpoints.clear();
+        _checkpoints.addAll((map['checkpoints'] as List)
+            .map((e) => CheckpointRecord.fromJson(e as Map<String, dynamic>)));
       }
       if (map['start'] != null) {
         _journeyStartTime = DateTime.parse(map['start'] as String);
@@ -133,14 +153,15 @@ class LocationProvider extends ChangeNotifier {
       if (loc.polygon != null && loc.polygon!.isNotEmpty) {
         inside = _pointInPolygon(LatLng(pos.latitude, pos.longitude), loc.polygon!);
       } else if (loc.center != null && loc.radiusMeters != null) {
-        final d = _distanceMeters(pos.latitude, pos.longitude, loc.center!.latitude, loc.center!.longitude);
+        final d = _distanceMeters(pos.latitude, pos.longitude,
+            loc.center!.latitude, loc.center!.longitude);
         inside = d <= loc.radiusMeters!;
       }
       if (inside) {
-        // if multiple zones overlap choose the one closest to its center (if defined)
         double dist = double.infinity;
         if (loc.center != null) {
-          dist = _distanceMeters(pos.latitude, pos.longitude, loc.center!.latitude, loc.center!.longitude);
+          dist = _distanceMeters(pos.latitude, pos.longitude,
+              loc.center!.latitude, loc.center!.longitude);
         }
         if (dist < minDist) {
           minDist = dist;
@@ -152,16 +173,17 @@ class LocationProvider extends ChangeNotifier {
 
     // Record GPS track if journey active
     if (_isJourneyActive) {
-      // sample to reduce points
       final now = DateTime.now();
       bool shouldAdd = false;
       if (_lastSavedPoint == null) {
         shouldAdd = true;
       } else {
-        final dist = _distanceMeters(pos.latitude, pos.longitude, _lastSavedPoint!.lat, _lastSavedPoint!.lng);
+        final dist = _distanceMeters(pos.latitude, pos.longitude,
+            _lastSavedPoint!.lat, _lastSavedPoint!.lng);
         if (dist >= _minDistanceMeters) {
           shouldAdd = true;
-        } else if (_lastSavedTime != null && now.difference(_lastSavedTime!).inSeconds >= _maxIntervalSeconds) {
+        } else if (_lastSavedTime != null &&
+            now.difference(_lastSavedTime!).inSeconds >= _maxIntervalSeconds) {
           shouldAdd = true;
         }
       }
@@ -187,7 +209,6 @@ class LocationProvider extends ChangeNotifier {
   }
 
   bool _pointInPolygon(LatLng point, List<LatLng> poly) {
-    // ray-casting algorithm
     var x = point.longitude;
     var y = point.latitude;
     bool inside = false;
@@ -196,7 +217,6 @@ class LocationProvider extends ChangeNotifier {
       final yi = poly[i].latitude;
       final xj = poly[j].longitude;
       final yj = poly[j].latitude;
-
       final intersect = ((yi > y) != (yj > y)) &&
           (x < (xj - xi) * (y - yi) / (yj - yi + 0.0) + xi);
       if (intersect) inside = !inside;
@@ -214,26 +234,11 @@ class LocationProvider extends ChangeNotifier {
   // ── Journey control ───────────────────────────────────────────────────────
 
   /// Begin a new journey (or resume existing if track file present).
-  ///
-  /// If a persisted track exists it will be loaded and recording resumed.
   Future<void> startJourney() async {
     if (_isJourneyActive) return;
     await _loadPersistentTrack();
-    if (_gpsTrack.isEmpty && _events.isEmpty) {
-      // brand‑new journey
+    if (_gpsTrack.isEmpty && _checkpoints.isEmpty) {
       _journeyStartTime = DateTime.now();
-      _events.add(JourneyEvent(
-        eventType: JourneyEventType.journeyStart,
-        timestamp: _journeyStartTime!,
-        lat: _currentPosition?.latitude,
-        lng: _currentPosition?.longitude,
-      ));
-    } else {
-      // try to set start time from first event
-      final startEvt = _events.cast<JourneyEvent?>().firstWhere(
-          (e) => e?.eventType == JourneyEventType.journeyStart,
-          orElse: () => null);
-      _journeyStartTime = startEvt?.timestamp;
     }
     _isJourneyActive = true;
     notifyListeners();
@@ -242,46 +247,28 @@ class LocationProvider extends ChangeNotifier {
     _startAutosaveTimer();
   }
 
-  Future<void> logEvent(JourneyEvent event) async {
-    _events.add(event);
-    await _persistTrack();
-  }
-
-  void recordStepStart(String stepId, {double? lat, double? lng}) {
-    _stepSummaries[stepId] = StepSummary(
-      stepId: stepId,
-      startedAt: DateTime.now(),
-      lat: lat ?? _currentPosition?.latitude,
-      lng: lng ?? _currentPosition?.longitude,
-    );
-  }
-
-  void recordStepEnd(String stepId, {bool completed = true}) {
-    final s = _stepSummaries[stepId];
-    if (s != null) {
-      s.finishedAt = DateTime.now();
-      s.completed = completed;
-    }
-  }
-
-  /// Ends the current journey and returns the raw data.
-  /// Use [finalizeJourney] for history‑friendly record.
-  Future<({List<JourneyPoint> track, List<JourneyEvent> events, DateTime? start})> endJourney() async {
-    _isJourneyActive = false;
-    _stopAutosaveTimer();
-    final endEvent = JourneyEvent(
-      eventType: JourneyEventType.journeyEnd,
-      timestamp: DateTime.now(),
+  /// Called when user opens a doa with checkPointStart set.
+  Future<void> recordCheckpointStart(int num, String name) async {
+    // Don't duplicate if already started
+    if (_checkpoints.any((c) => c.checkpointNum == num)) return;
+    _checkpoints.add(CheckpointRecord(
+      checkpointNum: num,
+      name: name,
+      startTime: DateTime.now(),
       lat: _currentPosition?.latitude,
       lng: _currentPosition?.longitude,
-    );
-    _events.add(endEvent);
-    final result = (track: List<JourneyPoint>.from(_gpsTrack), events: List<JourneyEvent>.from(_events), start: _journeyStartTime);
+    ));
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_journeyActiveKey, false);
     await _persistTrack();
-    return result;
+  }
+
+  /// Called when user taps "Ya" in checkpoint-end dialog.
+  Future<void> recordCheckpointEnd(int num) async {
+    final idx = _checkpoints.indexWhere((c) => c.checkpointNum == num);
+    if (idx < 0) return;
+    _checkpoints[idx].endTime = DateTime.now();
+    notifyListeners();
+    await _persistTrack();
   }
 
   Future<void> _persistTrack() async {
@@ -293,12 +280,10 @@ class LocationProvider extends ChangeNotifier {
         'start': _journeyStartTime?.toIso8601String(),
         'active': _isJourneyActive,
         'track': _gpsTrack.map((p) => p.toJson()).toList(),
-        'events': _events.map((e) => e.toJson()).toList(),
+        'checkpoints': _checkpoints.map((c) => c.toJson()).toList(),
       });
       await tmp.writeAsString(content);
-      if (await tmp.exists()) {
-        await tmp.rename(file.path);
-      }
+      if (await tmp.exists()) await tmp.rename(file.path);
     } catch (_) {}
   }
 
@@ -324,54 +309,21 @@ class LocationProvider extends ChangeNotifier {
     if (_isJourneyActive) await _persistTrack();
   }
 
-  /// Create a snapshot object for the current journey. Does not modify state.
-  Future<UmrahJourneySnapshot> snapshotJourney({required bool incomplete, String? notes}) async {
-    // ensure events include journeyEnd if not active
-    DateTime? end = _isJourneyActive ? null : DateTime.now();
-    if (!incomplete && end == null) end = DateTime.now();
-
-    return UmrahJourneySnapshot(
-      id: _journeyStartTime?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      startTime: _journeyStartTime ?? DateTime.now(),
-      endTime: end,
-      events: List.from(_events),
-      gpsTrack: List.from(_gpsTrack),
-      completed: !incomplete,
-      notes: notes,
-      stepSummaries: _stepSummaries.values.toList(),
-    );
-  }
-
   /// Finalize the journey and clear internal state; returns record ready for history.
   Future<UmrahJourneyRecord> finalizeJourney({String? notes}) async {
-    // Add journeyEnd event and deactivate before snapshotting so endTime is captured
-    _events.add(JourneyEvent(
-      eventType: JourneyEventType.journeyEnd,
-      timestamp: DateTime.now(),
-      lat: _currentPosition?.latitude,
-      lng: _currentPosition?.longitude,
-    ));
     _isJourneyActive = false;
-    final snap = await snapshotJourney(incomplete: false, notes: notes);
+    final endTime = DateTime.now();
     final record = UmrahJourneyRecord(
-      id: snap.id,
-      startTime: snap.startTime,
-      endTime: snap.endTime ?? DateTime.now(),
-      notes: snap.notes,
-      events: snap.events,
-      gpsTrack: snap.gpsTrack,
+      id: _journeyStartTime?.toIso8601String() ?? endTime.toIso8601String(),
+      startTime: _journeyStartTime ?? endTime,
+      endTime: endTime,
+      notes: notes,
+      gpsTrack: List.from(_gpsTrack),
       completed: true,
-      version: 1,
-      stepSummaries: snap.stepSummaries,
+      version: 2,
+      checkpoints: List.from(_checkpoints),
     );
-    // clear
-    _gpsTrack.clear();
-    _events.clear();
-    _stepSummaries.clear();
-    _journeyStartTime = null;
-    _lastSavedPoint = null;
-    _lastSavedTime = null;
-    _stopAutosaveTimer();
+    _clearState();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_journeyActiveKey, false);
     await _persistTrack();
@@ -381,39 +333,33 @@ class LocationProvider extends ChangeNotifier {
 
   /// Capture current track as an incomplete record then clear state.
   Future<UmrahJourneyRecord> snapshotAndClear({String? notes}) async {
-    // Add journeyEnd event and deactivate before snapshotting so endTime is captured
-    _events.add(JourneyEvent(
-      eventType: JourneyEventType.journeyEnd,
-      timestamp: DateTime.now(),
-      lat: _currentPosition?.latitude,
-      lng: _currentPosition?.longitude,
-    ));
     _isJourneyActive = false;
-    final snap = await snapshotJourney(incomplete: true, notes: notes);
+    final endTime = DateTime.now();
     final record = UmrahJourneyRecord(
-      id: snap.id,
-      startTime: snap.startTime,
-      endTime: snap.endTime ?? DateTime.now(),
-      notes: snap.notes,
-      events: snap.events,
-      gpsTrack: snap.gpsTrack,
+      id: _journeyStartTime?.toIso8601String() ?? endTime.toIso8601String(),
+      startTime: _journeyStartTime ?? endTime,
+      endTime: endTime,
+      notes: notes,
+      gpsTrack: List.from(_gpsTrack),
       completed: false,
-      version: 1,
-      stepSummaries: snap.stepSummaries,
+      version: 2,
+      checkpoints: List.from(_checkpoints),
     );
-    // clear state
-    _gpsTrack.clear();
-    _events.clear();
-    _stepSummaries.clear();
-    _journeyStartTime = null;
-    _lastSavedPoint = null;
-    _lastSavedTime = null;
-    _stopAutosaveTimer();
+    _clearState();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_journeyActiveKey, false);
     await _persistTrack();
     notifyListeners();
     return record;
+  }
+
+  void _clearState() {
+    _gpsTrack.clear();
+    _checkpoints.clear();
+    _journeyStartTime = null;
+    _lastSavedPoint = null;
+    _lastSavedTime = null;
+    _stopAutosaveTimer();
   }
 
   Future<void> pauseJourney() async {
@@ -431,4 +377,5 @@ class LocationProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_journeyActiveKey, true);
     notifyListeners();
-  }}
+  }
+}

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../data/umrah_data.dart';
+import '../models/journey_models.dart';
 import '../models/location_provider.dart';
 import '../models/progress_provider.dart';
 import '../models/umrah_location.dart';
+import '../models/umrah_step.dart';
 import 'journey_summary_screen.dart';
+import 'step_detail_screen.dart';
+import 'doa_viewer_screen.dart';
 import '../models/journey_history_provider.dart';
 
 class JourneyScreen extends StatelessWidget {
@@ -15,97 +19,218 @@ class JourneyScreen extends StatelessWidget {
     final loc = context.watch<LocationProvider>();
     final prog = context.watch<ProgressProvider>();
     final currentZone = loc.currentZone;
+    final isActive = loc.isJourneyActive;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Perjalanan Umrah')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // GPS status
-          _GpsStatusCard(
-            gpsAvailable: loc.gpsAvailable,
-            currentZone: currentZone,
-            isJourneyActive: loc.isJourneyActive,
-            onManualSelect: () => _showManualZoneDialog(context, loc),
-          ),
+    // Journey steps: ihram, tawaf, solat_tawaf, saie, tahallul
+    const journeyStepIds = {'ihram', 'tawaf', 'solat_tawaf', 'saie', 'tahallul'};
+    final journeySteps = umrahSteps.where((s) => journeyStepIds.contains(s.id)).toList();
 
-          const SizedBox(height: 16),
+    final missedCps = loc.missedCheckpoints;
+    final hasMissed = missedCps.isNotEmpty;
 
-          // Journey control — start moved to Tab 1 "Mulakan Umrah" button
-          if (loc.isJourneyActive)
-            OutlinedButton.icon(
-              icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
-              label: const Text('Selesai Ibadah Umrah', style: TextStyle(color: Colors.red)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+    return Column(
+      children: [
+        // 1. Compact GPS row
+        _CompactGpsRow(
+          gpsAvailable: loc.gpsAvailable,
+          currentZone: currentZone,
+          onManualSelect: () => _showManualZoneDialog(context, loc),
+        ),
+
+        // 2. "Mulakan Umrah" button (idle only)
+        if (!isActive)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: FilledButton.icon(
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Mulakan Umrah'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: const Color(0xFF1B5E20),
               ),
-              onPressed: () => _endJourney(context, loc, prog),
+              onPressed: () async {
+                if (!loc.gpsAvailable) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                  ));
+                }
+                await loc.startJourney();
+              },
             ),
-
-          const SizedBox(height: 20),
-
-          // Progress timeline
-          const Text(
-            'Perkembangan Umrah',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
 
-          ...List.generate(umrahSteps.length, (i) {
-            final step = umrahSteps[i];
-            final isTawaf = step.id == 'tawaf';
-            final isSaie = step.id == 'saie';
-            final hasSkipped = isTawaf
-                ? prog.hasSkippedRounds('tawaf')
-                : isSaie
-                    ? prog.hasSkippedRounds('saie')
-                    : false;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                margin: EdgeInsets.zero,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: const Color(0xFF1B5E20),
-                    child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        // 3. Scrollable content
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 8),
+            children: [
+              // Resume card — always visible when journey is active
+              if (isActive)
+                Card(
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  color: const Color(0xFFE8F5E9),
+                  child: ListTile(
+                    leading: Icon(
+                      loc.lastIncompleteCheckpoint != null
+                          ? Icons.play_circle_outline
+                          : Icons.check_circle_outline,
+                      color: const Color(0xFF1B5E20),
+                    ),
+                    title: Text(
+                      loc.lastIncompleteCheckpoint != null
+                          ? 'Sambung Semula'
+                          : 'Mulakan Panduan',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    subtitle: Text(
+                      loc.lastIncompleteCheckpoint?.name ?? 'Ihram',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () => _openLastCheckpoint(context, loc),
                   ),
-                  title: Text(step.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: (isTawaf || isSaie)
-                      ? _RoundDots(
-                          prefix: isTawaf ? 'tawaf' : 'saie',
-                          total: 7,
-                          progressProvider: prog,
-                        )
-                      : Text(step.subtitle, style: const TextStyle(fontSize: 12)),
-                  trailing: hasSkipped
-                      ? const Icon(Icons.warning_amber, color: Colors.orange, size: 20)
-                      : null,
+                ),
+
+              // Missed checkpoints ABOVE progress
+              if (hasMissed) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    'Peringatan Tertinggal',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange),
+                  ),
+                ),
+                _MissedCheckpointCard(
+                  missedCheckpoints: missedCps,
+                  onReopen: (cp) => _reopenCheckpoint(context, loc, cp),
+                ),
+              ],
+
+              // Progress header
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'Perkembangan Umrah',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
               ),
-            );
-          }),
 
-          // Missed reminders
-          if (_hasMissed(prog)) ...[
-            const SizedBox(height: 16),
-            const Text(
-              'Peringatan Tertinggal',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange),
+              // 5 journey step tiles — tappable
+              ...journeySteps.asMap().entries.map((entry) {
+                final stepNum = entry.key + 1;
+                final step = entry.value;
+                final isTawaf = step.id == 'tawaf';
+                final isSaie = step.id == 'saie';
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Card(
+                    margin: EdgeInsets.zero,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFF1B5E20),
+                        child: Text(
+                          '$stepNum',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      title: Text(step.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: (isTawaf || isSaie)
+                          ? _CheckpointDots(
+                              step: step,
+                              locationProvider: loc,
+                            )
+                          : Text(step.subtitle, style: const TextStyle(fontSize: 12)),
+                      trailing: const Icon(Icons.chevron_right, size: 18),
+                      onTap: () => _openStep(context, step),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+
+        // 4. "Selesai Ibadah Umrah" fixed at bottom (active only)
+        if (isActive)
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+                label: const Text('Selesai Ibadah Umrah', style: TextStyle(color: Colors.red)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red),
+                  minimumSize: const Size.fromHeight(44),
+                ),
+                onPressed: () => _endJourney(context, loc, prog),
+              ),
             ),
-            const SizedBox(height: 8),
-            _MissedReminderCard(progressProvider: prog),
-          ],
-        ],
-      ),
+          ),
+      ],
     );
   }
 
-  bool _hasMissed(ProgressProvider prog) =>
-      prog.hasSkippedRounds('tawaf') || prog.hasSkippedRounds('saie');
+  void _openStep(BuildContext context, UmrahStep step) {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => StepDetailScreen(step: step, fromJourney: true),
+    ));
+  }
 
-  Future<void> _endJourney(BuildContext context, LocationProvider loc, ProgressProvider prog) async {
+  void _openLastCheckpoint(BuildContext context, LocationProvider loc) {
+    final incomplete = loc.lastIncompleteCheckpoint;
+
+    if (incomplete == null) {
+      // No checkpoint started yet — open ihram in fullStep mode
+      final ihram = umrahSteps.firstWhere((s) => s.id == 'ihram');
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => DoaViewerScreen(
+          duas: const [],
+          initialIndex: 0,
+          title: ihram.title,
+          stepId: ihram.id,
+          fullStep: ihram,
+          fromJourney: true,
+        ),
+      ));
+      return;
+    }
+
+    _openCheckpointDoa(context, incomplete.checkpointNum);
+  }
+
+  void _reopenCheckpoint(BuildContext context, LocationProvider loc, CheckpointRecord cp) {
+    _openCheckpointDoa(context, cp.checkpointNum);
+  }
+
+  /// Navigate to the DoaViewerScreen for the doa that has checkPointStart == [cpNum].
+  void _openCheckpointDoa(BuildContext context, int cpNum) {
+    for (final step in umrahSteps) {
+      int flatIndex = 0;
+      for (final sub in step.subSteps) {
+        for (int di = 0; di < sub.duas.length; di++) {
+          if (sub.duas[di].checkPointStart == cpNum) {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (_) => DoaViewerScreen(
+                duas: const [],
+                initialIndex: flatIndex + di,
+                title: step.title,
+                stepId: step.id,
+                fullStep: step,
+                fromJourney: true,
+              ),
+            ));
+            return;
+          }
+        }
+        flatIndex += sub.duas.length;
+      }
+    }
+  }
+
+  Future<void> _endJourney(
+      BuildContext context, LocationProvider loc, ProgressProvider prog) async {
     final history = context.read<JourneyHistoryProvider>();
     final confirm = await showDialog<bool>(
       context: context,
@@ -114,19 +239,17 @@ class JourneyScreen extends StatelessWidget {
         content: const Text('Adakah anda pasti ingin menamatkan perjalanan umrah ini?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Ya, Selesai')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true), child: const Text('Ya, Selesai')),
         ],
       ),
     );
 
     if (confirm != true || !context.mounted) return;
 
-    // finalize through provider so state is cleared
     final record = await loc.finalizeJourney();
     await history.addOrUpdateJourney(record);
-    if (context.mounted) {
-      await prog.clearProgress();
-    }
+    if (context.mounted) await prog.clearProgress();
 
     if (context.mounted) {
       Navigator.pushReplacement(
@@ -136,7 +259,7 @@ class JourneyScreen extends StatelessWidget {
             startTime: record.startTime,
             endTime: record.endTime,
             gpsTrack: record.gpsTrack,
-            events: record.events,
+            checkpoints: record.checkpoints,
             journeyId: record.id,
           ),
         ),
@@ -177,122 +300,122 @@ class JourneyScreen extends StatelessWidget {
   }
 }
 
-class _GpsStatusCard extends StatelessWidget {
+class _CompactGpsRow extends StatelessWidget {
   final bool gpsAvailable;
   final UmrahLocation? currentZone;
-  final bool isJourneyActive;
   final VoidCallback onManualSelect;
 
-  const _GpsStatusCard({
+  const _CompactGpsRow({
     required this.gpsAvailable,
     required this.currentZone,
-    required this.isJourneyActive,
     required this.onManualSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       color: gpsAvailable ? const Color(0xFFE8F5E9) : Colors.grey[100],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              gpsAvailable ? Icons.gps_fixed : Icons.gps_off,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: [
+          Icon(
+            gpsAvailable ? Icons.gps_fixed : Icons.gps_off,
+            size: 14,
+            color: gpsAvailable ? const Color(0xFF1B5E20) : Colors.grey,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            gpsAvailable ? 'GPS Aktif' : 'GPS Tidak Aktif',
+            style: TextStyle(
+              fontSize: 12,
               color: gpsAvailable ? const Color(0xFF1B5E20) : Colors.grey,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    gpsAvailable ? 'GPS Aktif' : 'GPS Tidak Aktif',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: gpsAvailable ? const Color(0xFF1B5E20) : Colors.grey,
-                    ),
-                  ),
-                  Text(
-                    currentZone != null
-                        ? 'Anda di: ${currentZone!.nameMalay}'
-                        : 'Di luar kawasan',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            TextButton(
-              onPressed: onManualSelect,
-              child: const Text('Pilih Manual', style: TextStyle(fontSize: 12)),
+          ),
+          if (currentZone != null) ...[
+            Text(
+              ' · ${currentZone!.nameMalay}',
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
             ),
           ],
-        ),
+          const Spacer(),
+          TextButton(
+            onPressed: onManualSelect,
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              textStyle: const TextStyle(fontSize: 11),
+            ),
+            child: const Text('Pilih'),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _RoundDots extends StatelessWidget {
-  final String prefix;
-  final int total;
-  final ProgressProvider progressProvider;
+/// Dots indicating checkpoint completion status for tawaf/saie rounds.
+class _CheckpointDots extends StatelessWidget {
+  final UmrahStep step;
+  final LocationProvider locationProvider;
 
-  const _RoundDots({required this.prefix, required this.total, required this.progressProvider});
+  const _CheckpointDots({required this.step, required this.locationProvider});
 
   @override
   Widget build(BuildContext context) {
+    // Collect all checkPointEnd nums that appear in this step's duas
+    final endNums = <int>[];
+    for (final sub in step.subSteps) {
+      for (final doa in sub.duas) {
+        if (doa.checkPointEnd != null) endNums.add(doa.checkPointEnd!);
+      }
+    }
+
+    if (endNums.isEmpty) {
+      return Text(step.subtitle, style: const TextStyle(fontSize: 12));
+    }
+
     return Row(
-      children: List.generate(total, (i) {
-        final key = '${prefix}_${i + 1}';
-        final status = progressProvider.getRoundStatus(key);
-        final color = status == RoundStatus.confirmed
+      children: endNums.map((cpNum) {
+        final completed = locationProvider.isCheckpointCompleted(cpNum);
+        final started = locationProvider.isCheckpointStarted(cpNum);
+        final color = completed
             ? const Color(0xFF1B5E20)
-            : status == RoundStatus.skipped
+            : started
                 ? Colors.orange
                 : Colors.grey[300]!;
         return Padding(
           padding: const EdgeInsets.only(right: 4),
           child: CircleAvatar(backgroundColor: color, radius: 5),
         );
-      }),
+      }).toList(),
     );
   }
 }
 
-class _MissedReminderCard extends StatelessWidget {
-  final ProgressProvider progressProvider;
-  const _MissedReminderCard({required this.progressProvider});
+class _MissedCheckpointCard extends StatelessWidget {
+  final List<CheckpointRecord> missedCheckpoints;
+  final void Function(CheckpointRecord cp) onReopen;
+
+  const _MissedCheckpointCard({
+    required this.missedCheckpoints,
+    required this.onReopen,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final items = <Widget>[];
-    for (int i = 1; i <= 7; i++) {
-      if (progressProvider.getRoundStatus('tawaf_$i') == RoundStatus.skipped) {
-        items.add(ListTile(
-          leading: const Icon(Icons.warning_amber, color: Colors.orange),
-          title: Text('Tawaf Pusingan $i belum disahkan'),
-          trailing: TextButton(
-            onPressed: () => progressProvider.confirmRound('tawaf_$i'),
-            child: const Text('Ulangi'),
-          ),
-        ));
-      }
-      if (progressProvider.getRoundStatus('saie_$i') == RoundStatus.skipped) {
-        items.add(ListTile(
-          leading: const Icon(Icons.warning_amber, color: Colors.orange),
-          title: Text("Sa'ie Ke-$i belum disahkan"),
-          trailing: TextButton(
-            onPressed: () => progressProvider.confirmRound('saie_$i'),
-            child: const Text('Ulangi'),
-          ),
-        ));
-      }
-    }
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       color: Colors.orange[50],
-      child: Column(children: items),
+      child: Column(
+        children: missedCheckpoints.map((cp) => ListTile(
+          leading: const Icon(Icons.warning_amber, color: Colors.orange),
+          title: Text('${cp.name} belum diselesaikan'),
+          trailing: TextButton(
+            onPressed: () => onReopen(cp),
+            child: const Text('Rekod Semula'),
+          ),
+        )).toList(),
+      ),
     );
   }
 }

@@ -4,13 +4,11 @@ import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/bookmark_provider.dart';
 import '../models/progress_provider.dart';
-import '../models/location_provider.dart';
-import '../models/journey_history_provider.dart';
 import 'step_detail_screen.dart';
-import 'guide_flow_screen.dart';
 import 'search_screen.dart';
 import 'makkah_map_screen.dart';
 import 'journey_history_screen.dart';
+import 'journey_screen.dart';
 import 'doa_viewer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,8 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const _tabs = [
     _MenuTab(),
-    _GuideFlowTab(),
-    _BookmarksTab(),
+    JourneyScreen(),
+    JourneyHistoryScreen(),
     MakkahMapScreen(),
   ];
 
@@ -42,11 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => showSearch(context: context, delegate: UmrahSearchDelegate()),
           ),
           IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Sejarah Umrah',
+            icon: const Icon(Icons.bookmark_outline),
+            tooltip: 'Simpanan',
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const JourneyHistoryScreen()),
+              MaterialPageRoute(builder: (_) => const _BookmarksScreen()),
             ),
           ),
           IconButton(
@@ -72,9 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Umrah',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bookmark_outline),
-            selectedIcon: Icon(Icons.bookmark),
-            label: 'Simpanan',
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Sejarah',
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),
@@ -286,265 +284,16 @@ class _StepCard extends StatelessWidget {
   }
 }
 
-// ─── Guide Flow Tab ───────────────────────────────────────────────────────────
+// ─── Bookmarks Screen (pushed from AppBar) ────────────────────────────────────
 
-class _GuideFlowTab extends StatelessWidget {
-  const _GuideFlowTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final prog = context.watch<ProgressProvider>();
-
-    // Filter out Tawaf Wida, Lain-lain Doa, and Panduan dan Tips
-    final filteredSteps = umrahSteps.where((step) =>
-      step.id != 'tawaf_wida' && step.id != 'lain_lain' && step.id != 'panduan'
-    ).toList();
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: const Color(0xFF1B5E20),
-          child: const Row(
-            children: [
-              Icon(Icons.directions_walk, color: Colors.white),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Ikut langkah demi langkah panduan umrah anda',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Resume banner
-        if (prog.hasSavedProgress) ...[
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => GuideFlowScreen(
-                  steps: filteredSteps,
-                  initialStepIndex: prog.stepIndex,
-                  initialSubStepIndex: prog.subStepIndex,
-                ),
-              ),
-            ),
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF1B5E20)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.play_circle, color: Color(0xFF1B5E20)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Sambung Semula',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
-                        ),
-                        Text(
-                          'Langkah ${prog.stepIndex + 1}: ${prog.stepIndex < filteredSteps.length ? filteredSteps[prog.stepIndex].title : "Selesai"}',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF1B5E20)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF1B5E20)),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final loc = context.read<LocationProvider>();
-                  final history = context.read<JourneyHistoryProvider>();
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Batalkan Umrah?'),
-                      content: const Text(
-                          'Adakah anda pasti untuk batalkan Umrah ini. Jika anda dalam ihram, anda perlu membayar DAM.'),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Tidak')),
-                        FilledButton(
-                            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Batalkan')),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    // record incomplete journey then clear
-                    final rec = await loc.snapshotAndClear(notes: 'Dibatalkan');
-                    await history.addOrUpdateJourney(rec);
-                    if (context.mounted) {
-                      await prog.clearProgress();
-                    }
-                    messenger.showSnackBar(
-                      const SnackBar(content: Text('Progres Umrah dibatalkan')),
-                    );
-                  }
-                },
-                child: const Text('Batalkan Umrah', style: TextStyle(color: Colors.red)),
-              ),
-            ),
-          ),
-        ],
-
-        // "Mulakan Umrah" button — visible only when no journey is active
-        Consumer<LocationProvider>(
-          builder: (ctx, loc, _) {
-            if (loc.isJourneyActive) return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: FilledButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Mulakan Umrah'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  backgroundColor: const Color(0xFF1B5E20),
-                ),
-                onPressed: () async {
-                  if (!loc.gpsAvailable) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                      content: Text('GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                    ));
-                  }
-                  await loc.startJourney();
-                },
-              ),
-            );
-          },
-        ),
-
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: filteredSteps.length,
-            itemBuilder: (context, index) {
-              final step = filteredSteps[index];
-              final isLast = index == filteredSteps.length - 1;
-              return _FlowStepTile(
-                step: step,
-                stepNumber: index + 1,
-                isLast: isLast,
-              );
-            },
-          ),
-        ),
-
-      ],
-    );
-  }
-}
-
-class _FlowStepTile extends StatelessWidget {
-  final UmrahStep step;
-  final int stepNumber;
-  final bool isLast;
-
-  const _FlowStepTile({required this.step, required this.stepNumber, required this.isLast});
+class _BookmarksScreen extends StatelessWidget {
+  const _BookmarksScreen();
 
   @override
-  Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 40,
-            child: Column(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1B5E20),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$stepNumber',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: const Color(0xFF1B5E20).withValues(alpha: 0.3),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
-              child: Card(
-                margin: EdgeInsets.zero,
-                child: ListTile(
-                  title: Text(step.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(step.subtitle),
-                  trailing: Builder(builder: (ctx) {
-                    final prog = ctx.watch<ProgressProvider>();
-                    bool completed = prog.stepIndex > stepNumber - 1;
-                    String? progressText;
-                    if (step.id == 'tawaf' || step.id == 'saie') {
-                      final count = prog.getConfirmedCount(step.id);
-                      progressText = '$count/7';
-                      if (count >= 7) completed = true;
-                    }
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (completed) ...[
-                          const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                          const SizedBox(width: 4),
-                        ],
-                        if (progressText != null) ...[
-                          Text(
-                            progressText,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1B5E20)),
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        const Icon(Icons.chevron_right),
-                      ],
-                    );
-                  }),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => StepDetailScreen(step: step)),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Simpanan')),
+    body: const _BookmarksTab(),
+  );
 }
 
 // ─── Bookmarks Tab ────────────────────────────────────────────────────────────

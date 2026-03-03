@@ -16,7 +16,7 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 - **Carian (Search)** — search any doa by name across all steps
 
 ### Audio Playback
-- **Auto-play groups** — audio advances automatically through a sequence of duas; `autoPlay: false` items act as manual break-points
+- **Auto-play groups** — audio advances automatically through a sequence of duas; `` items act as manual break-points
 - **Repeat** — loop the current auto-play group
 - **Skip prev / next** — jump one doa at a time with auto-play
 

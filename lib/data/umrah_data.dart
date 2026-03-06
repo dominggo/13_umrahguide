@@ -760,7 +760,7 @@ final List<UmrahStep> umrahSteps = [
         ),
         DoaItem(
             title: 'Doa Saie Keenam 1/7',
-            imagePath: 'assets/images/doa/doa_saie/_keenam_1.png',
+            imagePath: 'assets/images/doa/doa_saie_keenam_1.png',
             audioPath: 'assets/audio/doa_saie_keenam_1.ogg'),
         DoaItem(
             title: 'Doa Saie Keenam 2/7',

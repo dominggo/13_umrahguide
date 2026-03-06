@@ -12,17 +12,22 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 
 ### Navigation
 - **Menu** — browse all 9 steps freely
-- **Panduan Aliran** — linear guided walk-through with progress auto-save and resume
-- **Carian (Search)** — search any doa by name across all steps
+- **Umrah** — journey dashboard: start/end a recorded Umrah, GPS status, checkpoint tracker, step grid
+- **Sejarah** — full list of all past Umrah journeys
+- **Peta** — offline OSM map of Masjidil Haram
+
+**AppBar (all tabs):**
+- Search icon — search any doa by name across all steps
+- Bookmark icon — view all saved bookmarks, grouped by step
 
 ### Audio Playback
-- **Auto-play groups** — audio advances automatically through a sequence of duas; `` items act as manual break-points
+- **Auto-play groups** — audio advances automatically through a sequence of duas; items with `autoPlay: false` act as manual break-points
 - **Repeat** — loop the current auto-play group
 - **Skip prev / next** — jump one doa at a time with auto-play
 
 ### Bookmarks
-- Save any doa with the bookmark icon
-- All bookmarks listed in the **Simpan** tab, grouped by step
+- Save any doa with the bookmark icon in the doa viewer
+- All bookmarks accessible via the **bookmark icon in the AppBar**, grouped by step
 - Persisted across app restarts
 
 ### Tawaf & Sa'ie Round Tracking
@@ -31,17 +36,25 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 - Round status (confirmed / skipped / pending) persisted to device storage
 - Missed rounds highlighted with a reminder banner
 
-### Journey Recording ("Mulakan Perjalanan")
+### Journey Recording & Checkpoint System
 - GPS track recorded in the background during your Umrah (every 5 m movement)
 - Auto-detects which Masjidil Haram zone you are in (Ka'abah, Hijir Ismail, Makam Ibrahim, Multazam, Telaga Zamzam, Bukit Safa, Bukit Marwah)
-- Manual zone override if GPS is unavailable
-- Journey events logged (step start, doa played, round confirmed) with timestamps and coordinates
+- **17 checkpoints** spanning Ihram through Tahallul, each with its own start and end timestamp:
+  - CP1: Ihram
+  - CP2–8: Tawaf (niat + 7 rounds)
+  - CP9: Solat Sunat Tawaf
+  - CP10–16: Sa'ie (niat + 7 rounds)
+  - CP17: Tahallul
+- Next button disabled at checkpoint end until user confirms completion
+- **Missed checkpoint detection** — checkpoints never started are highlighted; "Rekod Semula" lets you re-record them
 - **"Selesai Ibadah Umrah"** button ends the journey and opens the summary screen
 
 ### Journey Summary & Export
 - Total distance (km) and duration
 - OSM map with GPS polyline
-- Step-by-step timeline with timestamps and doa counts
+- **Grouped checkpoint timeline**: CP1 (Ihram), CP2–8 collapsible Tawaf group, CP9 (Solat Tawaf), CP10–16 collapsible Sa'ie group, CP17 (Tahallul)
+- Skipped/unstarted checkpoints highlighted with alert indicator
+- Edit checkpoint start/end times within 24 hours of journey end
 - **Export PNG** — screenshot of summary card, shared via WhatsApp / Telegram / etc.
 - **Export PDF** — styled PDF report, shared via any app
 - Auto-saved to journey history on first open
@@ -58,9 +71,12 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 - Green zone markers for 7 key Masjidil Haram locations
 - Blue GPS dot for your live position
 - GPS journey polyline overlay
-- Tap any marker → description + related duas (tap doa → opens viewer)
-- Long-press map → manually set your current zone
+- Tap any marker — description + related duas (tap doa → opens viewer)
+- Long-press map — manually set your current zone
 - Status bar shows current detected zone
+
+### Analytics
+- Anonymous usage analytics via Firebase Analytics (no personal data collected)
 
 ---
 
@@ -165,6 +181,7 @@ M-Umrah Pro has since been retired, but its doa images and audio recordings — 
 | GPS | [geolocator](https://pub.dev/packages/geolocator) |
 | Export | [pdf](https://pub.dev/packages/pdf) + [screenshot](https://pub.dev/packages/screenshot) + [share_plus](https://pub.dev/packages/share_plus) |
 | Persistence | [shared_preferences](https://pub.dev/packages/shared_preferences) |
+| Analytics | [firebase_core](https://pub.dev/packages/firebase_core) + [firebase_analytics](https://pub.dev/packages/firebase_analytics) |
 
 ---
 
@@ -173,30 +190,34 @@ M-Umrah Pro has since been retired, but its doa images and audio recordings — 
 ```
 lib/
 ├── data/
-│   └── umrah_data.dart          # All step/doa content (hardcoded) — edit content here
+│   └── umrah_data.dart               # All step/doa content (hardcoded) — edit content here
 ├── models/
-│   ├── umrah_step.dart          # UmrahStep, UmrahSubStep, DoaItem
-│   ├── audio_provider.dart      # Global audio playback state + track-complete stream
-│   ├── bookmark_provider.dart   # Bookmark save/load (shared_preferences)
-│   ├── progress_provider.dart   # Guided flow progress + Tawaf/Sa'ie round tracking
-│   ├── location_provider.dart   # GPS tracking, zone detection, journey recording
-│   ├── journey_models.dart      # JourneyPoint, JourneyEvent data classes
-│   ├── journey_record.dart      # UmrahJourneyRecord with mutable date fields
-│   ├── journey_history_provider.dart  # Journey history CRUD + JSON persistence
-│   └── umrah_location.dart      # UmrahLocation model + 7 Masjidil Haram zones
+│   ├── umrah_step.dart               # UmrahStep, UmrahSubStep, DoaItem
+│   ├── audio_provider.dart           # Global audio playback state + track-complete stream
+│   ├── bookmark_provider.dart        # Bookmark save/load (shared_preferences)
+│   ├── progress_provider.dart        # Guided-flow progress + Tawaf/Sa'ie round tracking
+│   ├── location_provider.dart        # GPS tracking, zone detection, checkpoint recording
+│   ├── journey_models.dart           # JourneyPoint, CheckpointRecord data classes
+│   ├── journey_record.dart           # UmrahJourneyRecord with mutable date fields
+│   ├── journey_history_provider.dart # Journey history CRUD + JSON persistence
+│   └── umrah_location.dart           # UmrahLocation model + 7 Masjidil Haram zones
 ├── screens/
-│   ├── home_screen.dart         # 4-tab nav: Menu / Panduan Aliran / Simpan / Peta
-│   ├── step_detail_screen.dart  # Step overview + substep list
-│   ├── substep_screen.dart      # Doa thumbnails with quick play + bookmark toggle
-│   ├── doa_viewer_screen.dart   # Full-screen PageView + audio nav + auto-play + rounds
-│   ├── guide_flow_screen.dart   # Linear guided flow with progress save + round dialogs
-│   ├── search_screen.dart       # SearchDelegate across all duas
-│   ├── makkah_map_screen.dart   # Offline OSM map + GPS dot + zone markers
-│   ├── journey_screen.dart      # Journey dashboard (start/end, GPS status, round tracker)
-│   ├── journey_summary_screen.dart  # Summary: map + timeline + PNG/PDF export
-│   └── journey_history_screen.dart  # All past journeys: list, edit, delete
+│   ├── splash_screen.dart            # 3 s splash with auto-navigation to HomeScreen
+│   ├── home_screen.dart              # 4-tab nav: Menu / Umrah / Sejarah / Peta
+│   ├── step_detail_screen.dart       # Step overview + substep list
+│   ├── substep_screen.dart           # Doa thumbnails with quick play + bookmark toggle
+│   ├── doa_viewer_screen.dart        # Full-screen PageView + audio nav + auto-play + checkpoints
+│   ├── search_screen.dart            # SearchDelegate across all duas
+│   ├── makkah_map_screen.dart        # Offline OSM map + GPS dot + zone markers
+│   ├── journey_screen.dart           # Journey dashboard (start/end, GPS status, checkpoint tracker)
+│   ├── journey_summary_screen.dart   # Summary: grouped timeline + map + PNG/PDF export
+│   └── journey_history_screen.dart   # All past journeys: list, edit, delete
+├── services/
+│   └── analytics_service.dart        # Firebase Analytics wrapper (static, no-op until initialized)
+├── firebase_options.dart             # Generated by flutterfire configure (gitignored)
+├── main.dart                         # App entry point, MultiProvider setup, Firebase init
 └── utils/
-    └── map_tile_cache.dart      # Shared in-memory OSM tile cache
+    └── map_tile_cache.dart           # Shared in-memory OSM tile cache
 ```
 
 ### Android permissions required

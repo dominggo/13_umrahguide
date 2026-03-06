@@ -18,10 +18,6 @@
 //
 // ─── UmrahSubStep fields ─────────────────────────────────────────────────────
 //   id:    unique key within the step — must be snake_case
-//         Tawaf rounds MUST use format:       tawaf_1      … tawaf_7
-//         Tawaf Wida' rounds MUST use format: tawaf_wida_1 … tawaf_wida_7
-//         Sa'ie rounds MUST use format:       saie_1       … saie_7
-//         (The app uses these ids to drive the round-completion tracking UI)
 //   title: shown in the SubStep screen list and GuideFlow header
 //   duas:  list of DoaItem — can be empty [] but try to include at least one
 //

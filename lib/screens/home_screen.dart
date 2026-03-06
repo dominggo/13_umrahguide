@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/bookmark_provider.dart';
-import '../models/progress_provider.dart';
 import 'step_detail_screen.dart';
 import 'search_screen.dart';
 import 'makkah_map_screen.dart';
@@ -211,17 +210,6 @@ class _StepCard extends StatelessWidget {
     final color = _stepColors[idx % _stepColors.length];
     final icon = _stepIcons[idx % _stepIcons.length];
 
-    // determine completion state
-    final prog = context.watch<ProgressProvider>();
-
-    // Only show checkmark for Tawaf and Saie if 7/7 rounds completed
-    bool showCheckmark = false;
-    if (step.id == 'tawaf') {
-      showCheckmark = prog.getConfirmedCount('tawaf') == 7;
-    } else if (step.id == 'saie') {
-      showCheckmark = prog.getConfirmedCount('saie') == 7;
-    }
-
     return Card(
       clipBehavior: Clip.hardEdge,
       child: InkWell(
@@ -261,11 +249,6 @@ class _StepCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showCheckmark) ...[
-                          const SizedBox(width: 4),
-                          const Icon(Icons.check_circle,
-                              color: Colors.green, size: 16),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 4),

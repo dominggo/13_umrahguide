@@ -366,7 +366,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
         title: Text(_buildAppBarTitle()),
         actions: [
           // Round indicator for Tawaf/Sa'ie
-          if (_isRoundSubstep)
+          if (widget.fromJourney && _isRoundSubstep)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: _RoundStatusIndicator(

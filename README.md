@@ -2,6 +2,120 @@
 
 A Flutter Android app providing a complete step-by-step guide for performing Umrah, with doa (prayer) images and audio playback. UI is in Bahasa Malaysia.
 
+---
+
+## Screen Overview
+
+### 1. Home Screen — Menu Tab
+```
+┌─────────────────────────────────────────────────┐
+│ Panduan Umrah                          🔍  🔖   │  ← AppBar (search + bookmark)
+├─────────────────────────────────────────────────┤
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐   │
+│  │  1.Ihram  │  │  2.Masuk  │  │ 3.Ka'abah │   │
+│  └───────────┘  └───────────┘  └───────────┘   │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐   │
+│  │  4.Tawaf  │  │5.S.Tawaf  │  │  6.Sa'ie  │   │  ← 9-step card grid
+│  └───────────┘  └───────────┘  └───────────┘   │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐   │
+│  │7.Tahallul │  │8.Tw.Wida' │  │9.Lain-lain│   │
+│  └───────────┘  └───────────┘  └───────────┘   │
+├─────────────────────────────────────────────────┤
+│    Menu    │   Umrah   │  Sejarah  │    Peta    │  ← Bottom navigation
+└─────────────────────────────────────────────────┘
+```
+
+### 2. Doa Viewer Screen
+```
+┌─────────────────────────────────────────────────┐
+│ ←  Tawaf — Pusingan 1    ① ② ③ ④ ⑤ ⑥ ⑦    │  ← Round indicators (Tawaf/Sa'ie)
+├─────────────────────────────────────────────────┤
+│                                                 │
+│          ┌────────────────────────┐             │
+│          │                        │             │
+│          │   Arabic doa text      │             │  ← Doa image (swipe to navigate)
+│          │   + transliteration    │             │
+│          │                        │             │
+│          └────────────────────────┘             │
+│                                                 │
+│          Niat Tawaf                             │  ← Doa title
+│                                                 │
+├─────────────────────────────────────────────────┤
+│            ⏮    ◀    ▶/⏸    ▶    🔁           │  ← Audio controls
+└─────────────────────────────────────────────────┘
+```
+
+### 3. Journey Screen — Umrah Tab
+```
+┌─────────────────────────────────────────────────┐
+│ Panduan Umrah                          🔍  🔖   │
+├─────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────┐  │
+│  │  GPS: Ka'abah Zone — 8 m              ●  │  │  ← Live zone detection
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  ┌───────────────────────────────────────────┐  │
+│  │          [ Mulakan Umrah ]                │  │  ← Start journey button (CP1)
+│  │                                           │  │
+│  │  Ihram  ·─· Tawaf ·─· S.Tawaf ·─· Sa'ie │  │  ← Checkpoint progress dots
+│  │   CP1     CP2─8     CP9      CP10─16  CP17│  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  ┌───────────┐  ┌───────────┐  ┌───────────┐   │
+│  │  1.Ihram  │  │  2.Masuk  │  │ 3.Ka'abah │   │  ← Step grid (tap to open doas)
+│  └───────────┘  └───────────┘  └───────────┘   │
+├─────────────────────────────────────────────────┤
+│    Menu    │  [Umrah]  │  Sejarah  │    Peta    │
+└─────────────────────────────────────────────────┘
+```
+
+### 4. Peta (Map) Screen
+```
+┌─────────────────────────────────────────────────┐
+│ Panduan Umrah                          🔍  🔖   │
+├─────────────────────────────────────────────────┤
+│  Zone: Ka'abah — 12 m                           │  ← Live zone status bar
+├─────────────────────────────────────────────────┤
+│                                                 │
+│   · · · · · · [OpenStreetMap] · · · · · · · ·  │
+│                                                 │
+│           [G] Ka'abah                           │
+│                  [G] Hijir Ismail               │  ← Green zone markers (G)
+│                 [B] ← your GPS dot              │  ← Blue GPS dot (B)
+│           [G] Makam Ibrahim                     │
+│               [G] Multazam · · ← GPS trail     │
+│                       [G] Zamzam               │
+│   [G] Safa                        [G] Marwah   │
+│                                                 │
+├─────────────────────────────────────────────────┤
+│    Menu    │   Umrah   │  Sejarah  │   [Peta]   │
+└─────────────────────────────────────────────────┘
+```
+
+### 5. Journey Summary Screen
+```
+┌─────────────────────────────────────────────────┐
+│ ←  Ringkasan Perjalanan              PNG   PDF  │  ← Export buttons
+├─────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────┐  │
+│  │  [OSM Map]       GPS route polyline:      │  │
+│  │                    ·····                  │  │  ← Map with recorded track
+│  │          ·····~                           │  │
+│  └───────────────────────────────────────────┘  │
+│  Tempoh: 3j 42m          Jarak: 4.2 km         │
+│  ─────────────────────────────────────────────  │
+│  ● CP1   Ihram                 08:05 – 08:31   │
+│  ▼ Tawaf (CP2–8)               08:45 – 09:50 ▶ │  ← Collapsible group
+│  ● CP9   Solat Sunat Tawaf     09:52 – 10:05   │
+│  ▼ Sa'ie (CP10–16)             10:10 – 11:15 ▶ │  ← Collapsible group
+│  ● CP17  Tahallul              11:20 – 11:35   │
+│  ─────────────────────────────────────────────  │
+│           Alhamdulillah. Umrah selesai.         │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
 ## Features
 
 ### Doa Content

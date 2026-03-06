@@ -47,21 +47,21 @@ Use `setup_and_run.bat` or `build_apk.bat` as shortcuts for common tasks.
 **Navigation flow:**
 ```
 SplashScreen (3 s auto-nav)
-  └── HomeScreen (BottomNavigationBar, 4 tabs)
+  └── HomeScreen (NavigationBar, 4 tabs)
         ├── Tab 0: Menu — grid of 9 UmrahStep cards
         │     └── StepDetailScreen → SubstepScreen (doa thumbnails)
-        │           └── DoaViewerScreen (PageView + audio nav + round tracking)
-        ├── Tab 1: Panduan Aliran — GuideFlowScreen (linear, progress save/resume)
-        │     └── DoaViewerScreen (same viewer, flow context)
-        ├── Tab 2: Simpan — bookmarks grouped by step
-        │     └── DoaViewerScreen (jump to bookmarked doa)
-        └── Tab 3: Peta — MakkahMapScreen (OSM + GPS dot + zone markers)
+        │           └── DoaViewerScreen (PageView + audio + tawaf/saie round tracking)
+        ├── Tab 1: Umrah — JourneyScreen (checkpoint-based journey; GPS tracking)
+        │     ├── StepDetailScreen (fromJourney: true) → DoaViewerScreen (flat navigation)
+        │     └── End journey → JourneySummaryScreen (map + timeline + PNG/PDF export)
+        ├── Tab 2: Sejarah — JourneyHistoryScreen (list of completed journeys)
+        │     └── JourneySummaryScreen (view past journey)
+        └── Tab 3: Peta — MakkahMapScreen (offline OSM + GPS dot + zone markers)
 
-AppBar extras (all tabs):
-  - Search icon → UmrahSearchDelegate (SearchDelegate across all duas)
-  - History icon → JourneyHistoryScreen → JourneySummaryScreen
-  - "Masuk ke Masjid" card → JourneyScreen (start/end journey)
-        └── End journey → JourneySummaryScreen (map + timeline + PNG/PDF export)
+AppBar actions (all tabs):
+  - Search icon → UmrahSearchDelegate (search across all duas)
+  - Bookmark icon → _BookmarksScreen (bookmarks grouped by step → DoaViewerScreen)
+  - Info icon → About dialog
 ```
 
 **Data layer:** All content hardcoded in `lib/data/umrah_data.dart` as a `const List<UmrahStep>`. No network calls; all assets bundled offline. Asset paths are string literals.
@@ -80,9 +80,10 @@ AppBar extras (all tabs):
 | `lib/models/journey_history_provider.dart` | Journey CRUD + JSON file persistence |
 | `lib/models/umrah_location.dart` | `UmrahLocation` model + 7 Masjidil Haram zone coordinates |
 | `lib/screens/doa_viewer_screen.dart` | Full-screen doa PageView, auto-play logic, round dialogs |
-| `lib/screens/guide_flow_screen.dart` | Linear guided flow through all 9 steps |
-| `lib/screens/makkah_map_screen.dart` | Offline OSM map with GPS overlay and zone markers |
-| `lib/screens/journey_summary_screen.dart` | Journey summary with PNG/PDF export |
+| `lib/screens/journey_screen.dart` | Tab 1 — checkpoint-based Umrah journey; GPS zone display; 5-step tiles; start/end flow |
+| `lib/screens/journey_history_screen.dart` | Tab 2 — list of completed journey records; opens JourneySummaryScreen |
+| `lib/screens/journey_summary_screen.dart` | Journey summary with OSM map, checkpoint timeline, PNG/PDF export |
+| `lib/screens/makkah_map_screen.dart` | Tab 3 — offline OSM map with GPS overlay and zone markers |
 | `lib/utils/map_tile_cache.dart` | Shared in-memory OSM tile cache (singleton) |
 
 ## Asset Conventions

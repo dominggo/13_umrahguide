@@ -111,8 +111,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   String? get _derivedRoundPrefix {
     final subId = _currentSubstepId;
     if (subId == null) return null;
-    if (subId.startsWith('tawaf_wida_')) return 'tawaf_wida';
-    if (subId.startsWith('tawaf_')) {
+
+    if (subId.startsWith('tawaf_') && !subId.startsWith('tawaf_wida_')) {
       final n = int.tryParse(subId.split('_').last);
       if (n != null && n >= 1 && n <= 7) return 'tawaf';
     }

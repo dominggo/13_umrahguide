@@ -20,12 +20,6 @@ class DoaViewerScreen extends StatefulWidget {
   final int initialIndex;
   final String title;
 
-  /// Optional: for round tracking (e.g. "tawaf", "saie")
-  final String? roundPrefix;
-
-  /// Optional: round number (1-7) for round completion dialog
-  final int? roundNumber;
-
   /// Step id for bookmark key building
   final String? stepId;
 
@@ -43,8 +37,6 @@ class DoaViewerScreen extends StatefulWidget {
     required this.duas,
     required this.initialIndex,
     required this.title,
-    this.roundPrefix,
-    this.roundNumber,
     this.stepId,
     this.substepId,
     this.fullStep,

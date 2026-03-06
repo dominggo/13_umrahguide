@@ -6,22 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 enum RoundStatus { pending, confirmed, skipped }
 
 class ProgressProvider extends ChangeNotifier {
-  static const _stepKey = 'progress_step';
-  static const _subKey = 'progress_sub';
   static const _roundsKey = 'rounds_v1';
   static const _autoPlayKey = 'autoPlayEnabled';
 
-  int _stepIndex = 0;
-  int _subStepIndex = 0;
-  bool _hasSaved = false;
   bool _autoPlayEnabled = true;
 
-  /// Round tracking: key is substep id (e.g. "tawaf_1"), value is status string
+  /// Round tracking: key is substep id (e.g. "tawaf_wida_1"), value is status
   Map<String, RoundStatus> _rounds = {};
 
-  int get stepIndex => _stepIndex;
-  int get subStepIndex => _subStepIndex;
-  bool get hasSavedProgress => _hasSaved;
   bool get autoPlayEnabled => _autoPlayEnabled;
 
   set autoPlayEnabled(bool v) {
@@ -39,9 +31,6 @@ class ProgressProvider extends ChangeNotifier {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    _stepIndex = prefs.getInt(_stepKey) ?? 0;
-    _subStepIndex = prefs.getInt(_subKey) ?? 0;
-    _hasSaved = prefs.containsKey(_stepKey);
     _autoPlayEnabled = prefs.getBool(_autoPlayKey) ?? true;
 
     final roundsJson = prefs.getString(_roundsKey);
@@ -52,42 +41,14 @@ class ProgressProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveProgress(int step, int sub) async {
-    _stepIndex = step;
-    _subStepIndex = sub;
-    _hasSaved = true;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_stepKey, step);
-    await prefs.setInt(_subKey, sub);
-  }
-
   Future<void> clearProgress() async {
-    _stepIndex = 0;
-    _subStepIndex = 0;
-    _hasSaved = false;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_stepKey);
-    await prefs.remove(_subKey);
   }
 
   // ── Round tracking ────────────────────────────────────────────────────────
 
-  Future<void> setRoundStatus(String substepId, RoundStatus status) async {
-    _rounds[substepId] = status;
-    notifyListeners();
-    await _saveRounds();
-  }
-
-  Future<void> confirmRound(String substepId) => setRoundStatus(substepId, RoundStatus.confirmed);
-  Future<void> skipRound(String substepId) => setRoundStatus(substepId, RoundStatus.skipped);
-
   RoundStatus getRoundStatus(String substepId) =>
       _rounds[substepId] ?? RoundStatus.pending;
-
-  bool isRoundComplete(String substepId) =>
-      _rounds[substepId] == RoundStatus.confirmed;
 
   /// Guard against 'tawaf' matching 'tawaf_wida_*' keys.
   bool _matchesPrefix(String key, String prefix) {
@@ -96,35 +57,11 @@ class ProgressProvider extends ChangeNotifier {
     return true;
   }
 
-  /// How many confirmed rounds exist for a given prefix (e.g. "tawaf" or "saie")
+  /// How many confirmed rounds exist for a given prefix
   int getConfirmedCount(String prefix) =>
       _rounds.entries
           .where((e) => _matchesPrefix(e.key, prefix) && e.value == RoundStatus.confirmed)
           .length;
-
-  /// Whether any rounds with this prefix are skipped
-  bool hasSkippedRounds(String prefix) =>
-      _rounds.entries.any((e) => _matchesPrefix(e.key, prefix) && e.value == RoundStatus.skipped);
-
-  Future<void> resetRounds(String prefix) async {
-    _rounds.removeWhere((k, v) => _matchesPrefix(k, prefix));
-    notifyListeners();
-    await _saveRounds();
-  }
-
-  Future<void> _saveRounds() async {
-    final prefs = await SharedPreferences.getInstance();
-    final map = _rounds.map((k, v) => MapEntry(k, _statusToString(v)));
-    await prefs.setString(_roundsKey, jsonEncode(map));
-  }
-
-  static String _statusToString(RoundStatus s) {
-    switch (s) {
-      case RoundStatus.confirmed: return 'confirmed';
-      case RoundStatus.skipped: return 'skipped';
-      case RoundStatus.pending: return 'pending';
-    }
-  }
 
   static RoundStatus _statusFromString(String s) {
     switch (s) {

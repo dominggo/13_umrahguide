@@ -1,7 +1,7 @@
 name: umrah_guide
 description: Panduan Umrah - Doa, Gambar dan Audio
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -30,6 +30,11 @@ dependencies:
   screenshot: ^3.0.0
   # UUID generation
   uuid: ^4.4.0
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_analytics: ^11.3.3
+  # URL launcher (for About dialog)
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

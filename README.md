@@ -91,11 +91,17 @@ flutter run
 
 # Build release APK
 flutter build apk --release
+
+# Build App Bundle (Play Store)
+flutter build appbundle --release
 ```
 
 APK output: `build/app/outputs/flutter-apk/app-release.apk`
+AAB output: `build/app/outputs/bundle/release/app-release.aab`
 
 Convenience scripts are included: `setup_and_run.bat` and `build_apk.bat`.
+
+**Package name:** `com.faeq.umrahmas`
 
 ---
 

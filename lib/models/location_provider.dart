@@ -69,6 +69,15 @@ class LocationProvider extends ChangeNotifier {
   List<CheckpointRecord> get missedCheckpoints =>
       _checkpoints.where((c) => !c.isCompleted).toList();
 
+  /// Returns the lowest checkpoint number in 1..maxCp that hasn't been started yet.
+  /// Returns null if all checkpoints up to maxCp have been started.
+  int? nextUnstartedCheckpoint(int maxCp) {
+    for (int i = 1; i <= maxCp; i++) {
+      if (!_checkpoints.any((c) => c.checkpointNum == i)) return i;
+    }
+    return null;
+  }
+
   LocationProvider() {
     _initConnectivity();
     _initGps();
@@ -88,7 +97,7 @@ class LocationProvider extends ChangeNotifier {
   Future<void> _loadPersistentTrack() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/journey_track.json');
+      final file = File('${dir.path}/umrah_cur.json');
       if (!await file.exists()) return;
       final map = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
       if (map['track'] is List) {
@@ -151,7 +160,8 @@ class LocationProvider extends ChangeNotifier {
     for (final loc in umrahLocations) {
       bool inside = false;
       if (loc.polygon != null && loc.polygon!.isNotEmpty) {
-        inside = _pointInPolygon(LatLng(pos.latitude, pos.longitude), loc.polygon!);
+        inside =
+            _pointInPolygon(LatLng(pos.latitude, pos.longitude), loc.polygon!);
       } else if (loc.center != null && loc.radiusMeters != null) {
         final d = _distanceMeters(pos.latitude, pos.longitude,
             loc.center!.latitude, loc.center!.longitude);
@@ -188,7 +198,8 @@ class LocationProvider extends ChangeNotifier {
         }
       }
       if (shouldAdd) {
-        final p = JourneyPoint(lat: pos.latitude, lng: pos.longitude, timestamp: now);
+        final p =
+            JourneyPoint(lat: pos.latitude, lng: pos.longitude, timestamp: now);
         _gpsTrack.add(p);
         _lastSavedPoint = p;
         _lastSavedTime = now;
@@ -203,7 +214,9 @@ class LocationProvider extends ChangeNotifier {
     final dLat = _rad(lat2 - lat1);
     final dLng = _rad(lng2 - lng1);
     final a = math.pow(math.sin(dLat / 2), 2) +
-        math.cos(_rad(lat1)) * math.cos(_rad(lat2)) * math.pow(math.sin(dLng / 2), 2);
+        math.cos(_rad(lat1)) *
+            math.cos(_rad(lat2)) *
+            math.pow(math.sin(dLng / 2), 2);
     final c = 2 * math.asin(math.sqrt(a));
     return r * c;
   }
@@ -274,8 +287,8 @@ class LocationProvider extends ChangeNotifier {
   Future<void> _persistTrack() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final tmp = File('${dir.path}/journey_track.json.tmp');
-      final file = File('${dir.path}/journey_track.json');
+      final tmp = File('${dir.path}/umrah_cur.json.tmp');
+      final file = File('${dir.path}/umrah_cur.json');
       final content = jsonEncode({
         'start': _journeyStartTime?.toIso8601String(),
         'active': _isJourneyActive,
@@ -284,7 +297,12 @@ class LocationProvider extends ChangeNotifier {
       });
       await tmp.writeAsString(content);
       if (await tmp.exists()) await tmp.rename(file.path);
-    } catch (_) {}
+    } catch (e, stack) {
+      // ← Changed from catch (_)
+      debugPrint('Persist track error: $e');
+      debugPrint(stack.toString());
+      // Don't rethrow - this is called during finalize
+    }
   }
 
   @override
@@ -311,8 +329,16 @@ class LocationProvider extends ChangeNotifier {
 
   /// Finalize the journey and clear internal state; returns record ready for history.
   Future<UmrahJourneyRecord> finalizeJourney({String? notes}) async {
+    debugPrint('=== FINALIZE JOURNEY ===');
+    debugPrint('_journeyStartTime: $_journeyStartTime');
+    debugPrint('_isJourneyActive: $_isJourneyActive');
+    debugPrint('_gpsTrack length: ${_gpsTrack.length}');
+    debugPrint('_checkpoints length: ${_checkpoints.length}');
+
     _isJourneyActive = false;
     final endTime = DateTime.now();
+    debugPrint('endTime: $endTime');
+
     final record = UmrahJourneyRecord(
       id: _journeyStartTime?.toIso8601String() ?? endTime.toIso8601String(),
       startTime: _journeyStartTime ?? endTime,
@@ -323,11 +349,26 @@ class LocationProvider extends ChangeNotifier {
       version: 2,
       checkpoints: List.from(_checkpoints),
     );
+
+    debugPrint('Record created:');
+    debugPrint('  id: ${record.id}');
+    debugPrint('  startTime: ${record.startTime}');
+    debugPrint('  endTime: ${record.endTime}');
+    debugPrint('  gpsTrack: ${record.gpsTrack.length}');
+    debugPrint('  checkpoints: ${record.checkpoints.length}');
+
     _clearState();
+
+    debugPrint('After _clearState():');
+    debugPrint('  _journeyStartTime: $_journeyStartTime');
+    debugPrint('  _gpsTrack: ${_gpsTrack.length}');
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_journeyActiveKey, false);
     await _persistTrack();
     notifyListeners();
+
+    debugPrint('=== FINALIZE COMPLETE ===');
     return record;
   }
 

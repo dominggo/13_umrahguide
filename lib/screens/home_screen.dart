@@ -37,7 +37,8 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Cari Doa',
-            onPressed: () => showSearch(context: context, delegate: UmrahSearchDelegate()),
+            onPressed: () =>
+                showSearch(context: context, delegate: UmrahSearchDelegate()),
           ),
           IconButton(
             icon: const Icon(Icons.bookmark_outline),
@@ -89,9 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       applicationName: 'Panduan Umrah',
       applicationVersion: '1.0.0',
-      applicationIcon: const Icon(Icons.mosque, size: 48, color: Color(0xFF1B5E20)),
+      applicationIcon:
+          const Icon(Icons.mosque, size: 48, color: Color(0xFF1B5E20)),
       children: const [
-        Text('Aplikasi panduan ibadah umrah lengkap dengan doa dalam gambar dan audio.'),
+        Text(
+            'Aplikasi panduan ibadah umrah lengkap dengan doa dalam gambar dan audio.'),
       ],
     );
   }
@@ -126,7 +129,6 @@ class _MenuTab extends StatelessWidget {
     );
   }
 }
-
 
 class _HeaderBanner extends StatelessWidget {
   @override
@@ -211,7 +213,7 @@ class _StepCard extends StatelessWidget {
 
     // determine completion state
     final prog = context.watch<ProgressProvider>();
-    
+
     // Only show checkmark for Tawaf and Saie if 7/7 rounds completed
     bool showCheckmark = false;
     if (step.id == 'tawaf') {
@@ -261,7 +263,8 @@ class _StepCard extends StatelessWidget {
                         ),
                         if (showCheckmark) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                          const Icon(Icons.check_circle,
+                              color: Colors.green, size: 16),
                         ],
                       ],
                     ),
@@ -291,9 +294,9 @@ class _BookmarksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Simpanan')),
-    body: const _BookmarksTab(),
-  );
+        appBar: AppBar(title: const Text('Simpanan')),
+        body: const _BookmarksTab(),
+      );
 }
 
 // ─── Bookmarks Tab ────────────────────────────────────────────────────────────
@@ -313,10 +316,11 @@ class _BookmarksTab extends StatelessWidget {
           children: [
             Icon(Icons.bookmark_outline, size: 64, color: Colors.grey),
             SizedBox(height: 12),
-            Text('Belum ada doa yang disimpan', style: TextStyle(color: Colors.grey)),
+            Text('Belum ada doa yang disimpan',
+                style: TextStyle(color: Colors.grey)),
             SizedBox(height: 4),
             Text(
-              'Ketuk ikon bookmark pada mana-mana doa untuk menyimpannya',
+              'tap ikon bookmark pada mana-mana doa untuk menyimpannya',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
@@ -342,12 +346,12 @@ class _BookmarksTab extends StatelessWidget {
           for (int i = 0; i < sub.duas.length; i++) {
             if (sub.duas[i].title == doaTitle) {
               grouped.putIfAbsent(step.title, () => []).add(_BookmarkEntry(
-                doa: sub.duas[i],
-                index: i,
-                siblings: sub.duas,
-                substepTitle: sub.title,
-                key: key,
-              ));
+                    doa: sub.duas[i],
+                    index: i,
+                    siblings: sub.duas,
+                    substepTitle: sub.title,
+                    key: key,
+                  ));
             }
           }
         }
@@ -364,7 +368,10 @@ class _BookmarksTab extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               child: Text(
                 entry.key,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1B5E20)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Color(0xFF1B5E20)),
               ),
             ),
             ...entry.value.map((bEntry) => Card(
@@ -378,15 +385,21 @@ class _BookmarksTab extends StatelessWidget {
                               width: 48,
                               height: 48,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.menu_book, size: 36, color: Color(0xFF1B5E20)),
+                              errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.menu_book,
+                                  size: 36,
+                                  color: Color(0xFF1B5E20)),
                             ),
                           )
                         : const Icon(Icons.menu_book, color: Color(0xFF1B5E20)),
-                    title: Text(bEntry.doa.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    subtitle: Text(bEntry.substepTitle, style: const TextStyle(fontSize: 11)),
+                    title: Text(bEntry.doa.title,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13)),
+                    subtitle: Text(bEntry.substepTitle,
+                        style: const TextStyle(fontSize: 11)),
                     trailing: IconButton(
-                      icon: const Icon(Icons.bookmark, color: Color(0xFF1B5E20)),
+                      icon:
+                          const Icon(Icons.bookmark, color: Color(0xFF1B5E20)),
                       onPressed: () => bm.toggle(bEntry.key),
                     ),
                     onTap: () => Navigator.push(

@@ -43,6 +43,9 @@ class DoaItem {
   final int? checkPointEnd;
   /// Label for the next section, shown on the checkpoint-end button.
   final String? nextLabel;
+  /// Optional override name for this checkpoint in journey history.
+  /// If null, the substep title is used as the checkpoint name.
+  final String? checkPointName;
 
   const DoaItem({
     required this.title,
@@ -54,5 +57,6 @@ class DoaItem {
     this.checkPointStart,
     this.checkPointEnd,
     this.nextLabel,
+    this.checkPointName,
   });
 }

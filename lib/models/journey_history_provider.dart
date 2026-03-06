@@ -7,10 +7,12 @@ import 'journey_record.dart';
 class JourneyHistoryProvider extends ChangeNotifier {
   List<UmrahJourneyRecord> _journeys = [];
   String? _errorMsg;
-  bool _writing = false;
 
-  List<UmrahJourneyRecord> get journeys =>
-      List.unmodifiable(_journeys)..sort((a, b) => b.startTime.compareTo(a.startTime));
+  List<UmrahJourneyRecord> get journeys {
+    final sorted = List.of(_journeys)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime));
+    return List.unmodifiable(sorted);
+  }
 
   int get totalUmrahCount => _journeys.length;
   String? get errorMsg => _errorMsg;
@@ -22,11 +24,6 @@ class JourneyHistoryProvider extends ChangeNotifier {
   Future<File> _file() async {
     final dir = await getApplicationDocumentsDirectory();
     return File('${dir.path}/umrah_history.json');
-  }
-
-  Future<File> _tmpFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/umrah_history.json.tmp');
   }
 
   Future<void> _load() async {
@@ -52,22 +49,22 @@ class JourneyHistoryProvider extends ChangeNotifier {
   }
 
   Future<void> _save() async {
-    if (_writing) return;
-    _writing = true;
     try {
-      final tmp = await _tmpFile();
-      final file = await _file();
-      final content = jsonEncode(_journeys.map((j) => j.toJson()).toList());
-      await tmp.writeAsString(content);
-      // rename will replace existing file atomically on most platforms
-      if (await tmp.exists()) {
-        await tmp.rename(file.path);
-      }
-    } catch (e) {
-      _errorMsg = 'Error saving journeys: $e';
-      // don't throw; keep in-memory state
-    } finally {
-      _writing = false;
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/umrah_history.json');
+
+      final jsonList = _journeys.map((j) => j.toJson()).toList();
+      final jsonString = jsonEncode(jsonList);
+
+      await file.writeAsString(jsonString);
+
+      // DEBUG: Verify immediately
+      debugPrint('✓ Saved ${jsonString.length} chars to ${file.path}');
+      debugPrint('✓ Journeys in memory: ${_journeys.length}');
+    } catch (e, stack) {
+      debugPrint('✗ Save error: $e');
+      debugPrint(stack.toString());
+      rethrow; // Important: let caller know it failed
     }
   }
 
@@ -77,7 +74,6 @@ class JourneyHistoryProvider extends ChangeNotifier {
     await _save();
   }
 
-  // NEW: add or update by id
   Future<void> addOrUpdateJourney(UmrahJourneyRecord record) async {
     final idx = _journeys.indexWhere((j) => j.id == record.id);
     if (idx >= 0) {
@@ -85,8 +81,9 @@ class JourneyHistoryProvider extends ChangeNotifier {
     } else {
       _journeys.add(record);
     }
-    notifyListeners();
-    await _save();
+
+    await _save(); // ← SAVE FIRST (was after notifyListeners)
+    notifyListeners(); // ← Then notify
   }
 
   Future<void> migrateIfNeeded() async {
@@ -117,12 +114,37 @@ class JourneyHistoryProvider extends ChangeNotifier {
     await _save();
   }
 
+  /// Update start/end time of a specific checkpoint within a journey.
+  /// Returns false if journey not found or journey ended > 24h ago.
+  Future<bool> updateCheckpoint(
+    String journeyId,
+    int checkpointNum, {
+    DateTime? startTime,
+    DateTime? endTime,
+  }) async {
+    final idx = _journeys.indexWhere((j) => j.id == journeyId);
+    if (idx < 0) return false;
+    final journey = _journeys[idx];
+    if (DateTime.now().difference(journey.endTime) > const Duration(hours: 24)) {
+      return false;
+    }
+    final cpIdx =
+        journey.checkpoints.indexWhere((c) => c.checkpointNum == checkpointNum);
+    if (cpIdx < 0) return false;
+    if (startTime != null) journey.checkpoints[cpIdx].startTime = startTime;
+    if (endTime != null) journey.checkpoints[cpIdx].endTime = endTime;
+    notifyListeners();
+    await _save();
+    return true;
+  }
+
   Future<void> deleteJourney(String id) async {
     _journeys.removeWhere((j) => j.id == id);
     notifyListeners();
     await _save();
   }
 
-  UmrahJourneyRecord? getById(String id) =>
-      _journeys.cast<UmrahJourneyRecord?>().firstWhere((j) => j?.id == id, orElse: () => null);
+  UmrahJourneyRecord? getById(String id) => _journeys
+      .cast<UmrahJourneyRecord?>()
+      .firstWhere((j) => j?.id == id, orElse: () => null);
 }

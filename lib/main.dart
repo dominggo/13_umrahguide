@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'services/analytics_service.dart';
 import 'models/audio_provider.dart';
 import 'models/bookmark_provider.dart';
 import 'models/progress_provider.dart';
@@ -7,7 +10,18 @@ import 'models/location_provider.dart';
 import 'models/journey_history_provider.dart';
 import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    AnalyticsService.initialized = true;
+  } catch (e) {
+    debugPrint('Firebase init failed: $e');
+  }
+
   runApp(const UmrahGuideApp());
 }
 

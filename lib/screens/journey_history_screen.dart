@@ -150,13 +150,47 @@ class _JourneyTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      tooltip: 'Padam rekod',
+                      onPressed: () => _confirmDelete(context),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.grey),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Padam Rekod?'),
+        content:
+            Text('Adakah anda pasti ingin memadam rekod Umrah ke-$umrahNum?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Tidak')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Padam'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && context.mounted) {
+      context.read<JourneyHistoryProvider>().deleteJourney(record.id);
+    }
   }
 
   Future<void> _showEditSheet(BuildContext context, UmrahJourneyRecord record) async {

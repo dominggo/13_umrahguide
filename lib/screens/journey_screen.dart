@@ -6,6 +6,7 @@ import '../models/location_provider.dart';
 import '../models/progress_provider.dart';
 import '../models/umrah_location.dart';
 import '../models/umrah_step.dart';
+import '../services/analytics_service.dart';
 import 'journey_summary_screen.dart';
 import 'step_detail_screen.dart';
 import 'doa_viewer_screen.dart';
@@ -22,8 +23,15 @@ class JourneyScreen extends StatelessWidget {
     final isActive = loc.isJourneyActive;
 
     // Journey steps: ihram, tawaf, solat_tawaf, saie, tahallul
-    const journeyStepIds = {'ihram', 'tawaf', 'solat_tawaf', 'saie', 'tahallul'};
-    final journeySteps = umrahSteps.where((s) => journeyStepIds.contains(s.id)).toList();
+    const journeyStepIds = {
+      'ihram',
+      'tawaf',
+      'solat_tawaf',
+      'saie',
+      'tahallul'
+    };
+    final journeySteps =
+        umrahSteps.where((s) => journeyStepIds.contains(s.id)).toList();
 
     final missedCps = loc.missedCheckpoints;
     final hasMissed = missedCps.isNotEmpty;
@@ -51,10 +59,12 @@ class JourneyScreen extends StatelessWidget {
               onPressed: () async {
                 if (!loc.gpsAvailable) {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                    content: Text(
+                        'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
                   ));
                 }
                 await loc.startJourney();
+                AnalyticsService.logJourneyStarted();
               },
             ),
           ),
@@ -77,13 +87,15 @@ class JourneyScreen extends StatelessWidget {
                       color: const Color(0xFF1B5E20),
                     ),
                     title: Text(
-                      loc.lastIncompleteCheckpoint != null
-                          ? 'Sambung Semula'
-                          : 'Mulakan Panduan',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      (loc.lastIncompleteCheckpoint != null ||
+                              loc.nextUnstartedCheckpoint(17) != null)
+                          ? 'Sambung Umrah'
+                          : 'Selesai',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     subtitle: Text(
-                      loc.lastIncompleteCheckpoint?.name ?? 'Ihram',
+                      _nextCheckpointSubtitle(loc),
                       style: const TextStyle(fontSize: 12),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 14),
@@ -97,7 +109,10 @@ class JourneyScreen extends StatelessWidget {
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
                     'Peringatan Tertinggal',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange),
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange),
                   ),
                 ),
                 _MissedCheckpointCard(
@@ -131,16 +146,19 @@ class JourneyScreen extends StatelessWidget {
                         backgroundColor: const Color(0xFF1B5E20),
                         child: Text(
                           '$stepNum',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
-                      title: Text(step.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      title: Text(step.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: (isTawaf || isSaie)
                           ? _CheckpointDots(
                               step: step,
                               locationProvider: loc,
                             )
-                          : Text(step.subtitle, style: const TextStyle(fontSize: 12)),
+                          : Text(step.subtitle,
+                              style: const TextStyle(fontSize: 12)),
                       trailing: const Icon(Icons.chevron_right, size: 18),
                       onTap: () => _openStep(context, step),
                     ),
@@ -159,7 +177,8 @@ class JourneyScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
-                label: const Text('Selesai Ibadah Umrah', style: TextStyle(color: Colors.red)),
+                label: const Text('Selesai Ibadah Umrah',
+                    style: TextStyle(color: Colors.red)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.red),
                   minimumSize: const Size.fromHeight(44),
@@ -173,34 +192,65 @@ class JourneyScreen extends StatelessWidget {
   }
 
   void _openStep(BuildContext context, UmrahStep step) {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => StepDetailScreen(step: step, fromJourney: true),
-    ));
+    AnalyticsService.logStepViewed(stepId: step.id);
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StepDetailScreen(step: step, fromJourney: true),
+        ));
+  }
+
+  /// Returns subtitle text for the resume card.
+  String _nextCheckpointSubtitle(LocationProvider loc) {
+    final incomplete = loc.lastIncompleteCheckpoint;
+    if (incomplete != null) return incomplete.name;
+    final nextNum = loc.nextUnstartedCheckpoint(17);
+    if (nextNum == null) return 'Semua selesai';
+    for (final step in umrahSteps) {
+      for (final sub in step.subSteps) {
+        for (final doa in sub.duas) {
+          if (doa.checkPointStart == nextNum) {
+            return doa.checkPointName ?? sub.title;
+          }
+        }
+      }
+    }
+    return 'Checkpoint $nextNum';
   }
 
   void _openLastCheckpoint(BuildContext context, LocationProvider loc) {
     final incomplete = loc.lastIncompleteCheckpoint;
 
-    if (incomplete == null) {
-      // No checkpoint started yet — open ihram in fullStep mode
-      final ihram = umrahSteps.firstWhere((s) => s.id == 'ihram');
-      Navigator.push(context, MaterialPageRoute(
-        builder: (_) => DoaViewerScreen(
-          duas: const [],
-          initialIndex: 0,
-          title: ihram.title,
-          stepId: ihram.id,
-          fullStep: ihram,
-          fromJourney: true,
-        ),
-      ));
+    if (incomplete != null) {
+      _openCheckpointDoa(context, incomplete.checkpointNum);
       return;
     }
 
-    _openCheckpointDoa(context, incomplete.checkpointNum);
+    // No incomplete checkpoint — find the next unstarted one
+    final nextNum = loc.nextUnstartedCheckpoint(17);
+    if (nextNum != null) {
+      _openCheckpointDoa(context, nextNum);
+      return;
+    }
+
+    // All 17 checkpoints completed — open ihram as fallback
+    final ihram = umrahSteps.firstWhere((s) => s.id == 'ihram');
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DoaViewerScreen(
+            duas: const [],
+            initialIndex: 0,
+            title: ihram.title,
+            stepId: ihram.id,
+            fullStep: ihram,
+            fromJourney: true,
+          ),
+        ));
   }
 
-  void _reopenCheckpoint(BuildContext context, LocationProvider loc, CheckpointRecord cp) {
+  void _reopenCheckpoint(
+      BuildContext context, LocationProvider loc, CheckpointRecord cp) {
     _openCheckpointDoa(context, cp.checkpointNum);
   }
 
@@ -211,16 +261,18 @@ class JourneyScreen extends StatelessWidget {
       for (final sub in step.subSteps) {
         for (int di = 0; di < sub.duas.length; di++) {
           if (sub.duas[di].checkPointStart == cpNum) {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (_) => DoaViewerScreen(
-                duas: const [],
-                initialIndex: flatIndex + di,
-                title: step.title,
-                stepId: step.id,
-                fullStep: step,
-                fromJourney: true,
-              ),
-            ));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DoaViewerScreen(
+                    duas: const [],
+                    initialIndex: flatIndex + di,
+                    title: step.title,
+                    stepId: step.id,
+                    fullStep: step,
+                    fromJourney: true,
+                  ),
+                ));
             return;
           }
         }
@@ -236,11 +288,15 @@ class JourneyScreen extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Tamatkan Perjalanan?'),
-        content: const Text('Adakah anda pasti ingin menamatkan perjalanan umrah ini?'),
+        content: const Text(
+            'Adakah anda pasti ingin menamatkan perjalanan umrah ini?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Tidak')),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true), child: const Text('Ya, Selesai')),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ya, Selesai')),
         ],
       ),
     );
@@ -249,6 +305,8 @@ class JourneyScreen extends StatelessWidget {
 
     final record = await loc.finalizeJourney();
     await history.addOrUpdateJourney(record);
+    AnalyticsService.logJourneyCompleted(
+        checkpointsCompleted: record.checkpoints.where((c) => c.isCompleted).length);
     if (context.mounted) await prog.clearProgress();
 
     if (context.mounted) {
@@ -345,7 +403,7 @@ class _CompactGpsRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               textStyle: const TextStyle(fontSize: 11),
             ),
-            child: const Text('Pilih'),
+            child: const Text('Lokasi Manual'),
           ),
         ],
       ),
@@ -403,18 +461,33 @@ class _MissedCheckpointCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = context.watch<LocationProvider>(); // <-- Get it here
+
+    // Filter first
+    final visibleCheckpoints = missedCheckpoints
+        .where((cp) => cp.name != loc.lastIncompleteCheckpoint?.name)
+        .toList();
+
+    // Hide card if nothing to show after filtering
+    if (visibleCheckpoints.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       color: Colors.orange[50],
       child: Column(
-        children: missedCheckpoints.map((cp) => ListTile(
-          leading: const Icon(Icons.warning_amber, color: Colors.orange),
-          title: Text('${cp.name} belum diselesaikan'),
-          trailing: TextButton(
-            onPressed: () => onReopen(cp),
-            child: const Text('Rekod Semula'),
-          ),
-        )).toList(),
+        children: visibleCheckpoints
+            .map((cp) => ListTile(
+                  leading:
+                      const Icon(Icons.warning_amber, color: Colors.orange),
+                  title: Text('${cp.name} belum diselesaikan'),
+                  trailing: TextButton(
+                    onPressed: () => onReopen(cp),
+                    child: const Text('Semula'),
+                  ),
+                ))
+            .toList(),
       ),
     );
   }

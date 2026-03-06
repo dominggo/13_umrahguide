@@ -27,10 +27,10 @@ class JourneyPoint {
 /// A checkpoint starts when the user opens the doa marked checkPointStart,
 /// and ends when they confirm the doa marked checkPointEnd.
 class CheckpointRecord {
-  /// Checkpoint number (1–19), matching checkPointStart/checkPointEnd in DoaItem.
+  /// Checkpoint number (1–17), matching checkPointStart/checkPointEnd in DoaItem.
   final int checkpointNum;
   final String name;
-  final DateTime startTime;
+  DateTime startTime;
   DateTime? endTime;
   final double? lat;
   final double? lng;

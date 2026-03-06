@@ -9,6 +9,7 @@ import '../models/bookmark_provider.dart';
 import '../models/progress_provider.dart';
 import '../models/location_provider.dart';
 import '../models/journey_history_provider.dart';
+import '../services/analytics_service.dart';
 import 'journey_summary_screen.dart';
 
 /// Flat entry combining a substep and one of its duas, for fullStep navigation.
@@ -78,7 +79,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
       _duas = widget.duas;
     }
 
-    _currentIndex = widget.initialIndex.clamp(0, _duas.isEmpty ? 0 : _duas.length - 1);
+    _currentIndex =
+        widget.initialIndex.clamp(0, _duas.isEmpty ? 0 : _duas.length - 1);
     _pageCtrl = PageController(initialPage: _currentIndex);
 
     // Record checkpoint start for the initial doa
@@ -96,8 +98,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
   // ── Derived helpers ──────────────────────────────────────────────────────
 
-  String? get _currentStepId =>
-      widget.fullStep?.id ?? widget.stepId;
+  String? get _currentStepId => widget.fullStep?.id ?? widget.stepId;
 
   String? get _currentSubstepId {
     if (widget.fullStep != null && _flatEntries.isNotEmpty) {
@@ -174,7 +175,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final substepTitle = widget.fullStep != null && _flatEntries.isNotEmpty
         ? _flatEntries[index].substep.title
         : widget.title;
-    loc.recordCheckpointStart(doa.checkPointStart!, substepTitle);
+    loc.recordCheckpointStart(doa.checkPointStart!, doa.checkPointName ?? substepTitle);
   }
 
   // ── Checkpoint end button handler ────────────────────────────────────────
@@ -197,6 +198,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final isFinish = nextLabel == 'Selesai Umrah';
 
     if (isFinish) {
+      await loc.recordCheckpointEnd(endNum);
+      if (!mounted) return;
       await _confirmFinalizeJourney(context, loc);
       return;
     }
@@ -222,6 +225,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
     if (confirmed != true || !mounted) return;
     await loc.recordCheckpointEnd(endNum);
+    AnalyticsService.logCheckpointCompleted(
+        checkpointNum: endNum, name: substepName);
 
     // Navigate: find doa with checkPointStart == endNum + 1 in fullStep or umrahSteps
     final nextNum = endNum + 1;
@@ -263,9 +268,11 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     }
   }
 
-  Future<void> _confirmFinalizeJourney(BuildContext ctx, LocationProvider loc) async {
-    final history = context.read<JourneyHistoryProvider>();
-    final prog = context.read<ProgressProvider>();
+  Future<void> _confirmFinalizeJourney(
+      BuildContext ctx, LocationProvider loc) async {
+    final history = ctx.read<JourneyHistoryProvider>();
+    final prog = ctx.read<ProgressProvider>();
+
     final confirm = await showDialog<bool>(
       context: ctx,
       builder: (_) => AlertDialog(
@@ -284,24 +291,42 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
         ],
       ),
     );
-    if (confirm == true && mounted) {
-      final record = await loc.finalizeJourney();
+
+    if (confirm != true) return;
+
+    // 1. Finalize journey
+    final record = await loc.finalizeJourney();
+
+    // 2. Save history WITH error handling
+    try {
       await history.addOrUpdateJourney(record);
-      await prog.clearProgress();
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => JourneySummaryScreen(
-              startTime: record.startTime,
-              endTime: record.endTime,
-              gpsTrack: record.gpsTrack,
-              checkpoints: record.checkpoints,
-              journeyId: record.id,
-            ),
-          ),
+      debugPrint('✓ History saved: ${record.id}');
+    } catch (e) {
+      debugPrint('✗ History save failed: $e');
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text('Gagal simpan rekod: $e')),
         );
       }
+      return; // Stop here if save failed
+    }
+
+    // 3. Clear progress only after successful save
+    await prog.clearProgress();
+
+    // 4. Navigate
+    if (ctx.mounted) {
+      Navigator.of(ctx).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => JourneySummaryScreen(
+            startTime: record.startTime,
+            endTime: record.endTime,
+            gpsTrack: record.gpsTrack,
+            checkpoints: record.checkpoints,
+            journeyId: record.id,
+          ),
+        ),
+      );
     }
   }
 
@@ -310,6 +335,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final total = _duas.length;
     final prog = context.watch<ProgressProvider>();
     final bm = context.watch<BookmarkProvider>();
+    final loc = context.watch<LocationProvider>();
 
     final currentDoa = total > 0 ? _duas[_currentIndex] : null;
     final curStep = _currentStepId;
@@ -347,6 +373,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                 prefix: _derivedRoundPrefix!,
                 total: 7,
                 progressProvider: prog,
+                locationProvider: loc,
               ),
             ),
           // Bookmark
@@ -384,10 +411,12 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                       total > 10 ? 1 : total,
                       (i) => total > 10
                           ? Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 2),
                               child: Text(
                                 '${_currentIndex + 1}/$total',
-                                style: const TextStyle(color: Color(0xFF1B5E20)),
+                                style:
+                                    const TextStyle(color: Color(0xFF1B5E20)),
                               ),
                             )
                           : AnimatedContainer(
@@ -399,7 +428,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                                 borderRadius: BorderRadius.circular(4),
                                 color: i == _currentIndex
                                     ? const Color(0xFF1B5E20)
-                                    : const Color(0xFF1B5E20).withValues(alpha: 0.3),
+                                    : const Color(0xFF1B5E20)
+                                        .withValues(alpha: 0.3),
                               ),
                             ),
                     ),
@@ -435,10 +465,14 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                       // Action row
                       Consumer<LocationProvider>(
                         builder: (ctx, loc, _) {
-                          final showCpEnd = _showCheckpointEndButton && loc.isJourneyActive;
-                          final showStart = currentDoa.checkPointStart == 1 && !loc.isJourneyActive;
+                          final showCpEnd =
+                              _showCheckpointEndButton && loc.isJourneyActive;
+                          final showStart = currentDoa.checkPointStart == 1 &&
+                              !loc.isJourneyActive;
 
-                          if (!showCpEnd && !showStart) return const SizedBox.shrink();
+                          if (!showCpEnd && !showStart) {
+                            return const SizedBox.shrink();
+                          }
 
                           return Container(
                             color: Colors.white,
@@ -448,31 +482,35 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                                 if (showStart)
                                   Expanded(
                                     child: FilledButton.icon(
-                                      icon: const Icon(Icons.play_arrow, size: 16),
+                                      icon: const Icon(Icons.play_arrow,
+                                          size: 16),
                                       label: const Text('Mulakan Umrah',
                                           style: TextStyle(fontSize: 12)),
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: const Color(0xFF1B5E20),
+                                        backgroundColor:
+                                            const Color(0xFF1B5E20),
                                         visualDensity: VisualDensity.compact,
                                       ),
                                       onPressed: () async {
                                         if (!loc.gpsAvailable) {
-                                          ScaffoldMessenger.of(ctx).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                    'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                                              ));
+                                          ScaffoldMessenger.of(ctx)
+                                              .showSnackBar(const SnackBar(
+                                            content: Text(
+                                                'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                                          ));
                                         }
                                         await loc.startJourney();
                                         if (mounted) {
-                                          _maybeRecordCheckpointStart(_currentIndex);
+                                          _maybeRecordCheckpointStart(
+                                              _currentIndex);
                                         }
                                       },
                                     ),
                                   ),
                                 if (showCpEnd)
                                   Expanded(
-                                    child: _buildCheckpointEndButton(currentDoa),
+                                    child:
+                                        _buildCheckpointEndButton(currentDoa),
                                   ),
                               ],
                             ),
@@ -717,34 +755,65 @@ class _RoundStatusIndicator extends StatelessWidget {
   final String prefix;
   final int total;
   final ProgressProvider progressProvider;
+  final LocationProvider locationProvider;
+
+  // Checkpoint numbers for tawaf rounds 1–7 (CP2–CP8)
+  static const _tawafCPs = [2, 3, 4, 5, 6, 7, 8];
+  // Checkpoint numbers for saie rounds 1–7 (CP11–CP17)
+  static const _saieCPs = [11, 12, 13, 14, 15, 16, 17];
 
   const _RoundStatusIndicator({
     required this.prefix,
     required this.total,
     required this.progressProvider,
+    required this.locationProvider,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        final confirmed = progressProvider.getConfirmedCount(prefix);
+        int done;
+        if (prefix == 'tawaf') {
+          done = _tawafCPs.where((n) => locationProvider.isCheckpointCompleted(n)).length;
+        } else if (prefix == 'saie') {
+          done = _saieCPs.where((n) => locationProvider.isCheckpointCompleted(n)).length;
+        } else {
+          done = progressProvider.getConfirmedCount(prefix);
+        }
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-              '${prefix == 'tawaf' ? 'Tawaf' : prefix == 'tawaf_wida' ? "Tawaf Wida'" : "Sa'ie"}: $confirmed/$total selesai'),
+              '${prefix == 'tawaf' ? 'Tawaf' : prefix == 'tawaf_wida' ? "Tawaf Wida'" : "Sa'ie"}: $done/$total selesai'),
           duration: const Duration(seconds: 2),
         ));
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(total, (i) {
-          final key = '${prefix}_${i + 1}';
-          final status = progressProvider.getRoundStatus(key);
-          final color = status == RoundStatus.confirmed
-              ? Colors.white
-              : status == RoundStatus.skipped
-                  ? Colors.orange
-                  : Colors.white30;
+          Color color;
+          if (prefix == 'tawaf') {
+            final cp = _tawafCPs[i];
+            color = locationProvider.isCheckpointCompleted(cp)
+                ? Colors.white
+                : locationProvider.isCheckpointStarted(cp)
+                    ? Colors.orange
+                    : Colors.white30;
+          } else if (prefix == 'saie') {
+            final cp = _saieCPs[i];
+            color = locationProvider.isCheckpointCompleted(cp)
+                ? Colors.white
+                : locationProvider.isCheckpointStarted(cp)
+                    ? Colors.orange
+                    : Colors.white30;
+          } else {
+            // tawaf_wida — no checkpoints, fall back to ProgressProvider
+            final status = progressProvider.getRoundStatus('${prefix}_${i + 1}');
+            color = status == RoundStatus.confirmed
+                ? Colors.white
+                : status == RoundStatus.skipped
+                    ? Colors.orange
+                    : Colors.white30;
+          }
           return Padding(
             padding: const EdgeInsets.only(right: 3),
             child: CircleAvatar(backgroundColor: color, radius: 4),

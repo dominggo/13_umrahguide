@@ -80,10 +80,10 @@ final List<UmrahStep> umrahSteps = [
       UmrahSubStep(id: 'rukun_umrah', title: 'Rukun Umrah', duas: [
         DoaItem(title: 'Rukun Umrah', textFile: 'rukun_umrah.txt'),
         DoaItem(
-            title: 'Panduan Ihram',
-            imagePath: 'assets/images/misc/ihram_land.png',
-            textFile: 'adab_ihram.txt',
-            checkPointStart : 1,),
+          title: 'Panduan Ihram',
+          imagePath: 'assets/images/misc/ihram_land.png',
+          textFile: 'adab_ihram.txt',
+        ),
       ]),
       UmrahSubStep(id: 'mandi_ihram', title: 'Mandi Sunat Ihram', duas: [
         DoaItem(
@@ -100,16 +100,20 @@ final List<UmrahStep> umrahSteps = [
       ]),
       UmrahSubStep(id: 'niat_umrah', title: 'Lafaz Niat Umrah', duas: [
         DoaItem(
-            title: 'Lafaz Niat Umrah',
-            imagePath: 'assets/images/doa/niat_umrah.png',
-            audioPath: 'assets/audio/lafaz_niat_umrah.ogg'),
+          title: 'Lafaz Niat Umrah',
+          imagePath: 'assets/images/doa/niat_umrah.png',
+          audioPath: 'assets/audio/lafaz_niat_umrah.ogg',
+          checkPointStart: 1,
+          checkPointName: 'Niat Umrah',
+        ),
       ]),
       UmrahSubStep(id: 'talbiah', title: 'Talbiah', duas: [
         DoaItem(
             title: 'Bacaan Talbiah',
             imagePath: 'assets/images/doa/talbiah.png',
             audioPath: 'assets/audio/talbiah.ogg',
-            checkPointEnd:1, nextLabel : 'Tawaf' ),
+            checkPointEnd: 1,
+            nextLabel: 'Tawaf'),
       ]),
     ],
   ),
@@ -142,10 +146,12 @@ final List<UmrahStep> umrahSteps = [
       ]),
       UmrahSubStep(id: 'niat_tawaf', title: 'Niat Tawaf', duas: [
         DoaItem(
-            title: 'Niat Tawaf Umrah',
-            imagePath: 'assets/images/doa/niat_tawaf_umrah.png',
-            audioPath: 'assets/audio/niat_tawaf_umrah.ogg',
-            checkPointStart : 2,),
+          title: 'Niat Tawaf Umrah',
+          imagePath: 'assets/images/doa/niat_tawaf_umrah.png',
+          audioPath: 'assets/audio/niat_tawaf_umrah.ogg',
+          checkPointStart: 2,
+          checkPointName: 'Niat Tawaf & Pusingan Pertama',
+        ),
       ]),
       UmrahSubStep(id: 'tawaf_1', title: 'Tawaf Pusingan Pertama', duas: [
         DoaItem(
@@ -153,170 +159,182 @@ final List<UmrahStep> umrahSteps = [
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
             audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Pertama 1',
+            title: 'Doa Tawaf Pertama 1/4',
             imagePath: 'assets/images/doa/doa_tawaf_pertama_1.png',
             audioPath: 'assets/audio/doa_tawaf_pertama_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Pertama 2',
+            title: 'Doa Tawaf Pertama 2/4',
             imagePath: 'assets/images/doa/doa_tawaf_pertama_2.png',
             audioPath: 'assets/audio/doa_tawaf_pertama_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Pertama 3',
+            title: 'Doa Tawaf Pertama 3/4',
             imagePath: 'assets/images/doa/doa_tawaf_pertama_3.png',
             audioPath: 'assets/audio/doa_tawaf_pertama_3.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Pertama 4',
+            title: 'Doa Tawaf Pertama 4/4',
             imagePath: 'assets/images/doa/doa_tawaf_pertama_4.png',
             audioPath: 'assets/audio/doa_tawaf_pertama_4.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:2,nextLabel : 'Tawaf Pusingan Kedua' ),
+            checkPointEnd: 2,
+            nextLabel: 'Tawaf Pusingan Kedua'),
       ]),
       UmrahSubStep(id: 'tawaf_2', title: 'Tawaf Pusingan Kedua', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 3),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 3,
+        ),
         DoaItem(
-            title: 'Doa Tawaf Kedua 1',
+            title: 'Doa Tawaf Kedua 1/3',
             imagePath: 'assets/images/doa/doa_tawaf_kedua_1.png',
             audioPath: 'assets/audio/doa_tawaf_kedua_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Kedua 2',
+            title: 'Doa Tawaf Kedua 2/3',
             imagePath: 'assets/images/doa/doa_tawaf_kedua_2.png',
             audioPath: 'assets/audio/doa_tawaf_kedua_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Kedua 3',
+            title: 'Doa Tawaf Kedua 3/3',
             imagePath: 'assets/images/doa/doa_tawaf_kedua_3.png',
             audioPath: 'assets/audio/doa_tawaf_kedua_3.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:3,nextLabel : 'Tawaf Pusingan Ketiga'),
+            checkPointEnd: 3,
+            nextLabel: 'Tawaf Pusingan Ketiga'),
       ]),
       UmrahSubStep(id: 'tawaf_3', title: 'Tawaf Pusingan Ketiga', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
             audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 4,),
+            checkPointStart: 4),
         DoaItem(
-            title: 'Doa Tawaf Ketiga 1',
+            title: 'Doa Tawaf Ketiga 1/3',
             imagePath: 'assets/images/doa/doa_tawaf_ketiga_1.png',
             audioPath: 'assets/audio/doa_tawaf_ketiga_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Ketiga 2',
+            title: 'Doa Tawaf Ketiga 2/3',
             imagePath: 'assets/images/doa/doa_tawaf_ketiga_2.png',
             audioPath: 'assets/audio/doa_tawaf_ketiga_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Ketiga 3',
+            title: 'Doa Tawaf Ketiga 3/3',
             imagePath: 'assets/images/doa/doa_tawaf_ketiga_3.png',
             audioPath: 'assets/audio/doa_tawaf_ketiga_3.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:4,nextLabel : 'Tawaf Pusingan Keempat'),
+            checkPointEnd: 4,
+            nextLabel: 'Tawaf Pusingan Keempat'),
       ]),
       UmrahSubStep(id: 'tawaf_4', title: 'Tawaf Pusingan Keempat', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 5,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 5,
+        ),
         DoaItem(
-            title: 'Doa Tawaf Keempat 1',
+            title: 'Doa Tawaf Keempat 1/3',
             imagePath: 'assets/images/doa/doa_tawaf_keempat_1.png',
             audioPath: 'assets/audio/doa_tawaf_keempat_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Keempat 2',
+            title: 'Doa Tawaf Keempat 2/3',
             imagePath: 'assets/images/doa/doa_tawaf_keempat_2.png',
             audioPath: 'assets/audio/doa_tawaf_keempat_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Keempat 3',
+            title: 'Doa Tawaf Keempat 3/3',
             imagePath: 'assets/images/doa/doa_tawaf_keempat_3.png',
             audioPath: 'assets/audio/doa_tawaf_keempat_3.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:5, nextLabel : 'Tawaf Pusingan Kelima'),
+            checkPointEnd: 5,
+            nextLabel: 'Tawaf Pusingan Kelima'),
       ]),
       UmrahSubStep(id: 'tawaf_5', title: 'Tawaf Pusingan Kelima', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 6,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 6,
+        ),
         DoaItem(
-            title: 'Doa Tawaf Kelima 1',
+            title: 'Doa Tawaf Kelima 1/3',
             imagePath: 'assets/images/doa/doa_tawaf_kelima_1.png',
             audioPath: 'assets/audio/doa_tawaf_kelima_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Kelima 2',
+            title: 'Doa Tawaf Kelima 2/3',
             imagePath: 'assets/images/doa/doa_tawaf_kelima_2.png',
             audioPath: 'assets/audio/doa_tawaf_kelima_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Kelima 3',
+            title: 'Doa Tawaf Kelima 3/3',
             imagePath: 'assets/images/doa/doa_tawaf_kelima_3.png',
             audioPath: 'assets/audio/doa_tawaf_kelima_3.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:6,nextLabel : 'Tawaf Pusingan Keenam'),
+            checkPointEnd: 6,
+            nextLabel: 'Tawaf Pusingan Keenam'),
       ]),
       UmrahSubStep(id: 'tawaf_6', title: 'Tawaf Pusingan Keenam', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 7,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 7,
+        ),
         DoaItem(
-            title: 'Doa Tawaf Keenam 1',
+            title: 'Doa Tawaf Keenam 1/3',
             imagePath: 'assets/images/doa/doa_tawaf_keenam_1.png',
             audioPath: 'assets/audio/doa_tawaf_keenam_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Keenam 2',
+            title: 'Doa Tawaf Keenam 2/3',
             imagePath: 'assets/images/doa/doa_tawaf_keenam_2.png',
             audioPath: 'assets/audio/doa_tawaf_keenam_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Keenam 3',
+            title: 'Doa Tawaf Keenam 3/3',
             imagePath: 'assets/images/doa/doa_tawaf_keenam_3.png',
             audioPath: 'assets/audio/doa_tawaf_keenam_3.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:7,nextLabel : 'Tawaf Pusingan Ketujuh'),
+            checkPointEnd: 7,
+            nextLabel: 'Tawaf Pusingan Ketujuh'),
       ]),
       UmrahSubStep(id: 'tawaf_7', title: 'Tawaf Pusingan Ketujuh', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 8,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 8,
+        ),
         DoaItem(
-            title: 'Doa Tawaf Ketujuh 1',
+            title: 'Doa Tawaf Ketujuh 1/3',
             imagePath: 'assets/images/doa/doa_tawaf_ketujuh_1.png',
             audioPath: 'assets/audio/doa_tawaf_ketujuh_1.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Ketujuh 2',
+            title: 'Doa Tawaf Ketujuh 2/3',
             imagePath: 'assets/images/doa/doa_tawaf_ketujuh_2.png',
             audioPath: 'assets/audio/doa_tawaf_ketujuh_2.ogg'),
         DoaItem(
-            title: 'Doa Tawaf Ketujuh 3',
+            title: 'Doa Tawaf Ketujuh 3/3',
             imagePath: 'assets/images/doa/doa_tawaf_ketujuh_3.png',
             audioPath: 'assets/audio/doa_tawaf_ketujuh_3.ogg'),
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
             audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
-            checkPointEnd:8,nextLabel : 'Solat Sunat Tawaf'),
+            checkPointEnd: 8,
+            nextLabel: 'Solat Sunat Tawaf'),
       ]),
     ],
   ),
@@ -329,42 +347,44 @@ final List<UmrahStep> umrahSteps = [
     icon: 'assets/images/locations/tempat_4_a.jpg',
     subSteps: [
       UmrahSubStep(
-        id: 'niat_solat_tawaf',
-        title: 'Niat Solat Sunat Tawaf',
-        duas: [
-          DoaItem(
-            title: 'Niat Solat Sunat Tawaf',
-            imagePath: 'assets/images/doa/niat_solat_sunat_tawaf.png',
-            audioPath: 'assets/audio/niat_solat_sunat_tawaf.ogg',
-            checkPointStart : 9,),
-        ]),
+          id: 'niat_solat_tawaf',
+          title: 'Niat Solat Sunat Tawaf',
+          duas: [
+            DoaItem(
+              title: 'Niat Solat Sunat Tawaf',
+              imagePath: 'assets/images/doa/niat_solat_sunat_tawaf.png',
+              audioPath: 'assets/audio/niat_solat_sunat_tawaf.ogg',
+              checkPointStart: 9,
+            ),
+          ]),
       UmrahSubStep(
-        id: 'doa_makam_ibrahim',
-        title: 'Doa di Makam Ibrahim',
-        duas: [
-          DoaItem(
-            title: 'Doa Makam Ibrahim 1',
-            imagePath: 'assets/images/doa/doa_makam_ibrahim_1.png',
-            audioPath: 'assets/audio/doa_makam_ibrahim_1.ogg'),
-          DoaItem(
-            title: 'Doa Makam Ibrahim 2',
-            imagePath: 'assets/images/doa/doa_makam_ibrahim_2.png',
-            audioPath: 'assets/audio/doa_makam_ibrahim_2.ogg'),
-          DoaItem(
-            title: 'Doa Makam Ibrahim 3',
-            imagePath: 'assets/images/doa/doa_makam_ibrahim_3.png',
-            audioPath: 'assets/audio/doa_makam_ibrahim_3.ogg'),
-          DoaItem(
-            title: 'Doa Makam Ibrahim 4',
-            imagePath: 'assets/images/doa/doa_makam_ibrahim_4.png',
-            audioPath: 'assets/audio/doa_makam_ibrahim_4.ogg'),
-        ]),
-    UmrahSubStep(id: 'air_zamzam', title: 'Minum Air Zam Zam', duas: [
-      DoaItem(
-        title: 'Doa Minum Air Zam Zam',
-        imagePath: 'assets/images/doa/doa_semasa_minum_air_zam2.png',
-        audioPath: 'assets/audio/doa_minum_air_zam2.ogg',
-        checkPointEnd:9,nextLabel : 'Sa\'ei'),
+          id: 'doa_makam_ibrahim',
+          title: 'Doa di Makam Ibrahim',
+          duas: [
+            DoaItem(
+                title: 'Doa Makam Ibrahim 1',
+                imagePath: 'assets/images/doa/doa_makam_ibrahim_1.png',
+                audioPath: 'assets/audio/doa_makam_ibrahim_1.ogg'),
+            DoaItem(
+                title: 'Doa Makam Ibrahim 2',
+                imagePath: 'assets/images/doa/doa_makam_ibrahim_2.png',
+                audioPath: 'assets/audio/doa_makam_ibrahim_2.ogg'),
+            DoaItem(
+                title: 'Doa Makam Ibrahim 3',
+                imagePath: 'assets/images/doa/doa_makam_ibrahim_3.png',
+                audioPath: 'assets/audio/doa_makam_ibrahim_3.ogg'),
+            DoaItem(
+                title: 'Doa Makam Ibrahim 4',
+                imagePath: 'assets/images/doa/doa_makam_ibrahim_4.png',
+                audioPath: 'assets/audio/doa_makam_ibrahim_4.ogg'),
+          ]),
+      UmrahSubStep(id: 'air_zamzam', title: 'Minum Air Zam Zam', duas: [
+        DoaItem(
+            title: 'Doa Minum Air Zam Zam',
+            imagePath: 'assets/images/doa/doa_semasa_minum_air_zam2.png',
+            audioPath: 'assets/audio/doa_minum_air_zam2.ogg',
+            checkPointEnd: 9,
+            nextLabel: 'Sa\'ei'),
       ]),
     ],
   ),
@@ -389,8 +409,7 @@ final List<UmrahStep> umrahSteps = [
             imagePath: 'assets/images/doa/niat_saie_umrah.png',
             audioPath: 'assets/audio/niat_saie_umrah.ogg',
             checkPointStart: 10,
-            checkPointEnd: 10,
-            nextLabel: 'Sa\'ie Pusingan Pertama'),
+            checkPointName: 'Niat Saie dan Saie 1'),
       ]),
       UmrahSubStep(
           id: 'doa_bab_safa',
@@ -405,467 +424,477 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart: 11),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
         DoaItem(
-            title: 'Doa Saie Pertama 1',
+            title: 'Doa Saie Pertama 1/4',
             imagePath: 'assets/images/doa/doa_saie_pertama_1.png',
             audioPath: 'assets/audio/doa_saie_pertama_1.ogg'),
         DoaItem(
-            title: 'Doa Saie Pertama 2',
+            title: 'Doa Saie Pertama 2/4',
             imagePath: 'assets/images/doa/doa_saie_pertama_2.png',
             audioPath: 'assets/audio/doa_saie_pertama_2.ogg'),
         DoaItem(
-            title: 'Doa Saie Pertama 3',
+            title: 'Doa Saie Pertama 3/4',
             imagePath: 'assets/images/doa/doa_saie_pertama_3.png',
             audioPath: 'assets/audio/doa_saie_pertama_3.ogg'),
         DoaItem(
-            title: 'Doa Saie Pertama 4',
+            title: 'Doa Saie Pertama 4/4',
             imagePath: 'assets/images/doa/doa_saie_pertama_4.png',
             audioPath: 'assets/audio/doa_saie_pertama_4.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 1',
+            title: 'Doa Antara Tiang Hijau 1/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 2',
+            title: 'Doa Antara Tiang Hijau 2/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau 1',
+            title: 'Doa Selepas Tiang Hijau 1/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang_hijau_pertama_1.png',
             audioPath: 'assets/audio/doa_selepas_tiang_hijau_pertama_1.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau 2',
+            title: 'Doa Selepas Tiang Hijau 2/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang_hijau_pertama_2.png',
             audioPath: 'assets/audio/doa_selepas_tiang_hijau_pertama_2.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau 3',
+            title: 'Doa Selepas Tiang Hijau 3/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang_hijau_pertama_3.png',
             audioPath: 'assets/audio/doa_selepas_tiang_hijau_pertama_3.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau 4',
+            title: 'Doa Selepas Tiang Hijau 4/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang_hijau_pertama_4.png',
             audioPath: 'assets/audio/doa_selepas_tiang_hijau_pertama_4.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 1',
+            title: 'Doa Ketika Mendaki Bukit Marwah 1/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_1.png',
             audioPath: 'assets/audio/doa_bukit_marwah_1.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 2',
+            title: 'Doa Ketika Mendaki Bukit Marwah 2/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_2.png',
             audioPath: 'assets/audio/doa_bukit_marwah_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 3',
+            title: 'Doa Ketika Mendaki Bukit Marwah 3/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_3.png',
             audioPath: 'assets/audio/doa_bukit_marwah_3.ogg',
-            checkPointEnd:11,nextLabel : 'Sa\'ei Pusingan Kedua'),
+            checkPointEnd: 10,
+            nextLabel: 'Sa\'ei Pusingan Kedua'),
       ]),
       UmrahSubStep(id: 'saie_2', title: 'Saie 2 - Marwah ke Safa', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 12,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 11,
+        ),
         DoaItem(
-            title: 'Doa Saie Kedua 1',
+            title: 'Doa Saie Kedua 1/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_1.png',
             audioPath: 'assets/audio/doa_saie_kedua_1.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 2',
+            title: 'Doa Saie Kedua 2/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_2.png',
             audioPath: 'assets/audio/doa_saie_kedua_2.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 3',
+            title: 'Doa Saie Kedua 3/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_3.png',
             audioPath: 'assets/audio/doa_saie_kedua_3.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 4',
+            title: 'Doa Saie Kedua 4/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_4.png',
             audioPath: 'assets/audio/doa_saie_kedua_4.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 5',
+            title: 'Doa Saie Kedua 5/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_5.png',
             audioPath: 'assets/audio/doa_saie_kedua_5.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 6',
+            title: 'Doa Saie Kedua 6/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_6.png',
             audioPath: 'assets/audio/doa_saie_kedua_6.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 7',
+            title: 'Doa Saie Kedua 7/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_7.png',
             audioPath: 'assets/audio/doa_saie_kedua_7.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 8',
+            title: 'Doa Saie Kedua 8/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_8.png',
             audioPath: 'assets/audio/doa_saie_kedua_8.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 9',
+            title: 'Doa Saie Kedua 9/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_9.png',
             audioPath: 'assets/audio/doa_saie_kedua_9.ogg'),
         DoaItem(
-            title: 'Doa Saie Kedua 10',
+            title: 'Doa Saie Kedua 10/10',
             imagePath: 'assets/images/doa/doa_saie_kedua_10.png',
             audioPath: 'assets/audio/doa_saie_kedua_10.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 1',
+            title: 'Doa Antara Tiang Hijau 1/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 2',
+            title: 'Doa Antara Tiang Hijau 2/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 1',
+            title: 'Doa Ketika Mendaki Bukit Safa 1/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_1.png',
             audioPath: 'assets/audio/doa_bukit_safa_1.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 2',
+            title: 'Doa Ketika Mendaki Bukit Safa 2/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_2.png',
             audioPath: 'assets/audio/doa_bukit_safa_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 3',
+            title: 'Doa Ketika Mendaki Bukit Safa 3/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_3.png',
             audioPath: 'assets/audio/doa_bukit_safa_3.ogg',
-            checkPointEnd:12,nextLabel : 'Sa\'ei Pusingan Ketiga'),
+            checkPointEnd: 11,
+            nextLabel: 'Sa\'ei Pusingan Ketiga'),
       ]),
       UmrahSubStep(id: 'saie_3', title: 'Saie 3 - Safa ke Marwah', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 13,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 12,
+        ),
         DoaItem(
-            title: 'Doa Saie Ketiga 1',
+            title: 'Doa Saie Ketiga 1/4',
             imagePath: 'assets/images/doa/doa_saie_ketiga_1.png',
             audioPath: 'assets/audio/doa_saie_ketiga_1.ogg'),
         DoaItem(
-            title: 'Doa Saie Ketiga 2',
+            title: 'Doa Saie Ketiga 2/4',
             imagePath: 'assets/images/doa/doa_saie_ketiga_2.png',
             audioPath: 'assets/audio/doa_saie_ketiga_2.ogg'),
         DoaItem(
-            title: 'Doa Saie Ketiga 3',
+            title: 'Doa Saie Ketiga 3/4',
             imagePath: 'assets/images/doa/doa_saie_ketiga_3.png',
             audioPath: 'assets/audio/doa_saie_ketiga_3.ogg'),
         DoaItem(
-            title: 'Doa Saie Ketiga 4',
+            title: 'Doa Saie Ketiga 4/4',
             imagePath: 'assets/images/doa/doa_saie_ketiga_4.png',
             audioPath: 'assets/audio/doa_saie_ketiga_4.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 1',
+            title: 'Doa Antara Tiang Hijau 1/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 2',
+            title: 'Doa Antara Tiang Hijau 2/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 1',
+            title: 'Doa Selepas Tiang Hijau Ketiga 1/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_1.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_1.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 2',
+            title: 'Doa Selepas Tiang Hijau Ketiga 2/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_2.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_2.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 3',
+            title: 'Doa Selepas Tiang Hijau Ketiga 3/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_3.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_3.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 4',
+            title: 'Doa Selepas Tiang Hijau Ketiga 4/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_4.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_4.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 5',
+            title: 'Doa Selepas Tiang Hijau Ketiga 5/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_5.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_5.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 6',
+            title: 'Doa Selepas Tiang Hijau Ketiga 6/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_6.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_6.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Ketiga 7',
+            title: 'Doa Selepas Tiang Hijau Ketiga 7/8',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_ketiga_7.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_ketiga_7.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 1',
+            title: 'Doa Ketika Mendaki Bukit Marwah 1/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_1.png',
             audioPath: 'assets/audio/doa_bukit_marwah_1.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 2',
+            title: 'Doa Ketika Mendaki Bukit Marwah 2/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_2.png',
             audioPath: 'assets/audio/doa_bukit_marwah_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 3',
+            title: 'Doa Ketika Mendaki Bukit Marwah 3/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_3.png',
             audioPath: 'assets/audio/doa_bukit_marwah_3.ogg',
-            checkPointEnd:13,nextLabel : 'Sa\'ei Pusingan Keempat'),
+            checkPointEnd: 12,
+            nextLabel: 'Sa\'ei Pusingan Keempat'),
       ]),
       UmrahSubStep(id: 'saie_4', title: 'Saie 4 - Marwah ke Safa', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 14,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 13,
+        ),
         DoaItem(
-            title: 'Doa Saie Keempat 1',
+            title: 'Doa Saie Keempat 1/6',
             imagePath: 'assets/images/doa/doa_saie_keempat_1.png',
             audioPath: 'assets/audio/doa_saie_keempat_1.ogg'),
         DoaItem(
-            title: 'Doa Saie Keempat 2',
+            title: 'Doa Saie Keempat 2/6',
             imagePath: 'assets/images/doa/doa_saie_keempat_2.png',
             audioPath: 'assets/audio/doa_saie_keempat_2.ogg'),
         DoaItem(
-            title: 'Doa Saie Keempat 3',
+            title: 'Doa Saie Keempat 3/6',
             imagePath: 'assets/images/doa/doa_saie_keempat_3.png',
             audioPath: 'assets/audio/doa_saie_keempat_3.ogg'),
         DoaItem(
-            title: 'Doa Saie Keempat 4',
+            title: 'Doa Saie Keempat 4/6',
             imagePath: 'assets/images/doa/doa_saie_keempat_4.png',
             audioPath: 'assets/audio/doa_saie_keempat_4.ogg'),
         DoaItem(
-            title: 'Doa Saie Keempat 5',
+            title: 'Doa Saie Keempat 5/6',
             imagePath: 'assets/images/doa/doa_saie_keempat_5.png',
             audioPath: 'assets/audio/doa_saie_keempat_5.ogg'),
         DoaItem(
-            title: 'Doa Saie Keempat 6',
+            title: 'Doa Saie Keempat 6/6',
             imagePath: 'assets/images/doa/doa_saie_keempat_6.png',
             audioPath: 'assets/audio/doa_saie_keempat_6.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 1',
+            title: 'Doa Antara Tiang Hijau 1/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 2',
+            title: 'Doa Antara Tiang Hijau 2/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 1',
+            title: 'Doa Ketika Mendaki Bukit Safa 1/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_1.png',
             audioPath: 'assets/audio/doa_bukit_safa_1.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 2',
+            title: 'Doa Ketika Mendaki Bukit Safa 2/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_2.png',
             audioPath: 'assets/audio/doa_bukit_safa_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 3',
+            title: 'Doa Ketika Mendaki Bukit Safa 3/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_3.png',
             audioPath: 'assets/audio/doa_bukit_safa_3.ogg',
-            checkPointEnd:14,nextLabel : 'Sa\'ei Pusingan Kelima'),
+            checkPointEnd: 13,
+            nextLabel: 'Sa\'ei Pusingan Kelima'),
       ]),
       UmrahSubStep(id: 'saie_5', title: 'Saie 5 - Safa ke Marwah', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 15,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 14,
+        ),
         DoaItem(
-            title: 'Doa Saie Kelima 1',
+            title: 'Doa Saie Kelima 1/3',
             imagePath: 'assets/images/doa/doa_saie_kelima_1.png',
             audioPath: 'assets/audio/doa_saie_kelima_1.ogg'),
         DoaItem(
-            title: 'Doa Saie Kelima 2',
+            title: 'Doa Saie Kelima 2/3',
             imagePath: 'assets/images/doa/doa_saie_kelima_2.png',
             audioPath: 'assets/audio/doa_saie_kelima_2.ogg'),
         DoaItem(
-            title: 'Doa Saie Kelima 3',
+            title: 'Doa Saie Kelima 3/3',
             imagePath: 'assets/images/doa/doa_saie_kelima_3.png',
             audioPath: 'assets/audio/doa_saie_kelima_3.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 1',
+            title: 'Doa Antara Tiang Hijau 1/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 2',
+            title: 'Doa Antara Tiang Hijau 2/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Kelima 1',
+            title: 'Doa Selepas Tiang Hijau Kelima 1/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_kelima_1.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_kelima_1.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Kelima 2',
+            title: 'Doa Selepas Tiang Hijau Kelima 2/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_kelima_2.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_kelima_2.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Kelima 3',
+            title: 'Doa Selepas Tiang Hijau Kelima 3/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_kelima_3.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_kelima_3.ogg'),
         DoaItem(
-            title: 'Doa Selepas Tiang Hijau Kelima 4',
+            title: 'Doa Selepas Tiang Hijau Kelima 4/4',
             imagePath:
                 'assets/images/doa/doa_selepas_tiang2_hijau_kelima_4.png',
             audioPath: 'assets/audio/doa_selepas_tiang2_hijau_kelima_4.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 1',
+            title: 'Doa Ketika Mendaki Bukit Marwah 1/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_1.png',
             audioPath: 'assets/audio/doa_bukit_marwah_1.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 2',
+            title: 'Doa Ketika Mendaki Bukit Marwah 2/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_2.png',
             audioPath: 'assets/audio/doa_bukit_marwah_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Marwah 3',
+            title: 'Doa Ketika Mendaki Bukit Marwah 3/3',
             imagePath: 'assets/images/doa/doa_bukit_marwah_3.png',
             audioPath: 'assets/audio/doa_bukit_marwah_3.ogg',
-            checkPointEnd:15,nextLabel : 'Sa\'ei Pusingan Keenam'),
+            checkPointEnd: 14,
+            nextLabel: 'Sa\'ei Pusingan Keenam'),
       ]),
       UmrahSubStep(id: 'saie_6', title: 'Saie 6 - Marwah ke Safa', duas: [
         DoaItem(
-            title: 'Zikir Melambai Ka\'abah',
-            imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-            checkPointStart : 16,),
+          title: 'Zikir Melambai Ka\'abah',
+          imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
+          audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+          checkPointStart: 15,
+        ),
         DoaItem(
-            title: 'Doa Saie Keenam 1',
-            imagePath: 'assets/images/doa/doa_saie_keenam_1.png',
+            title: 'Doa Saie Keenam 1/7',
+            imagePath: 'assets/images/doa/doa_saie/_keenam_1.png',
             audioPath: 'assets/audio/doa_saie_keenam_1.ogg'),
         DoaItem(
-            title: 'Doa Saie Keenam 2',
+            title: 'Doa Saie Keenam 2/7',
             imagePath: 'assets/images/doa/doa_saie_keenam_2.png',
             audioPath: 'assets/audio/doa_saie_keenam_2.ogg'),
         DoaItem(
-            title: 'Doa Saie Keenam 3',
+            title: 'Doa Saie Keenam 3/7',
             imagePath: 'assets/images/doa/doa_saie_keenam_3.png',
             audioPath: 'assets/audio/doa_saie_keenam_3.ogg'),
         DoaItem(
-            title: 'Doa Saie Keenam 4',
+            title: 'Doa Saie Keenam 4/7',
             imagePath: 'assets/images/doa/doa_saie_keenam_4.png',
             audioPath: 'assets/audio/doa_saie_keenam_4.ogg'),
         DoaItem(
-            title: 'Doa Saie Keenam 5',
+            title: 'Doa Saie Keenam 5/7',
             imagePath: 'assets/images/doa/doa_saie_keenam_5.png',
             audioPath: 'assets/audio/doa_saie_keenam_5.ogg'),
         DoaItem(
-            title: 'Doa Saie Keenam 6',
+            title: 'Doa Saie Keenam 6/7',
             imagePath: 'assets/images/doa/doa_saie_keenam_6.png',
             audioPath: 'assets/audio/doa_saie_keenam_6.ogg'),
         DoaItem(
-            title: 'Doa Saie Keenam 7',
+            title: 'Doa Saie Keenam 7/7',
             imagePath: 'assets/images/doa/doa_saie_keenam_7.png',
             audioPath: 'assets/audio/doa_saie_keenam_7.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 1',
+            title: 'Doa Antara Tiang Hijau 1/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
         DoaItem(
-            title: 'Doa Antara Tiang Hijau 2',
+            title: 'Doa Antara Tiang Hijau 2/2',
             imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
             audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 1',
+            title: 'Doa Ketika Mendaki Bukit Safa 1/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_1.png',
             audioPath: 'assets/audio/doa_bukit_safa_1.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 2',
+            title: 'Doa Ketika Mendaki Bukit Safa 2/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_2.png',
             audioPath: 'assets/audio/doa_bukit_safa_2.ogg'),
         DoaItem(
-            title: 'Doa Ketika Mendaki Bukit Safa 3',
+            title: 'Doa Ketika Mendaki Bukit Safa 3/3',
             imagePath: 'assets/images/doa/doa_bukit_safa_3.png',
             audioPath: 'assets/audio/doa_bukit_safa_3.ogg',
-            checkPointEnd:16,nextLabel : 'Sa\'ei Pusingan Ketujuh'),
+            checkPointEnd: 15,
+            nextLabel: 'Sa\'ei Pusingan Ketujuh'),
       ]),
       UmrahSubStep(
-        id: 'saie_7',
-        title: 'Saie 7 - Safa ke Marwah (Akhir)',
-        duas: [
-          DoaItem(
+          id: 'saie_7',
+          title: 'Saie 7 - Safa ke Marwah (Akhir)',
+          duas: [
+            DoaItem(
               title: 'Zikir Melambai Ka\'abah',
               imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
               audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
-              checkPointStart : 17,),
-          DoaItem(
-              title: 'Doa Saie Ketujuh 1',
-              imagePath: 'assets/images/doa/doa_saie_ketujuh_1.png',
-              audioPath: 'assets/audio/doa_saie_ketujuh_1.ogg'),
-          DoaItem(
-              title: 'Doa Saie Ketujuh 2',
-              imagePath: 'assets/images/doa/doa_saie_ketujuh_2.png',
-              audioPath: 'assets/audio/doa_saie_ketujuh_2.ogg'),
-          DoaItem(
-              title: 'Doa Antara Tiang Hijau 1',
-              imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
-              audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
-          DoaItem(
-              title: 'Doa Antara Tiang Hijau 2',
-              imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
-              audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
-          DoaItem(
-              title: 'Doa Selepas Tiang Hijau Ketujuh 1',
-              imagePath:
-                  'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_1.png',
-              audioPath:
-                  'assets/audio/doa_selepas_tiang2_hijau_ketujuh_1.ogg'),
-          DoaItem(
-              title: 'Doa Selepas Tiang Hijau Ketujuh 2',
-              imagePath:
-                  'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_2.png',
-              audioPath:
-                  'assets/audio/doa_selepas_tiang2_hijau_ketujuh_2.ogg'),
-          DoaItem(
-              title: 'Doa Selepas Tiang Hijau Ketujuh 3',
-              imagePath:
-                  'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_3.png',
-              audioPath:
-                  'assets/audio/doa_selepas_tiang2_hijau_ketujuh_3.ogg'),
-          DoaItem(
-              title: 'Doa Selepas Tiang Hijau Ketujuh 4',
-              imagePath:
-                  'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_4.png',
-              audioPath:
-                  'assets/audio/doa_selepas_tiang2_hijau_ketujuh_4.ogg'),
-          DoaItem(
-              title: 'Doa Selepas Tiang Hijau Ketujuh 5',
-              imagePath:
-                  'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_5.png',
-              audioPath:
-                  'assets/audio/doa_selepas_tiang2_hijau_ketujuh_5.ogg'),
-          DoaItem(
-              title: 'Doa Selepas Tiang Hijau Ketujuh 6',
-              imagePath:
-                  'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_6.png',
-              audioPath:
-                  'assets/audio/doa_selepas_tiang2_hijau_ketujuh_6.ogg'),
-          DoaItem(
-              title: 'Doa Ketika Mendaki Bukit Marwah 1',
-              imagePath: 'assets/images/doa/doa_bukit_marwah_1.png',
-              audioPath: 'assets/audio/doa_bukit_marwah_1.ogg'),
-          DoaItem(
-              title: 'Doa Ketika Mendaki Bukit Marwah 2',
-              imagePath: 'assets/images/doa/doa_bukit_marwah_2.png',
-              audioPath: 'assets/audio/doa_bukit_marwah_2.ogg'),
-          DoaItem(
-              title: 'Doa Ketika Mendaki Bukit Marwah 3',
-              imagePath: 'assets/images/doa/doa_bukit_marwah_3.png',
-              audioPath: 'assets/audio/doa_bukit_marwah_3.ogg',
-              checkPointEnd:17,nextLabel : 'Doa Selepas Sa\'ie'),
-        ]),
+              checkPointStart: 16,
+            ),
+            DoaItem(
+                title: 'Doa Saie Ketujuh 1/2',
+                imagePath: 'assets/images/doa/doa_saie_ketujuh_1.png',
+                audioPath: 'assets/audio/doa_saie_ketujuh_1.ogg'),
+            DoaItem(
+                title: 'Doa Saie Ketujuh 2/2',
+                imagePath: 'assets/images/doa/doa_saie_ketujuh_2.png',
+                audioPath: 'assets/audio/doa_saie_ketujuh_2.ogg'),
+            DoaItem(
+                title: 'Doa Antara Tiang Hijau 1/2',
+                imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_1.png',
+                audioPath: 'assets/audio/doa_antara_tiang2_hijau_1.ogg'),
+            DoaItem(
+                title: 'Doa Antara Tiang Hijau 2/2',
+                imagePath: 'assets/images/doa/doa_antara_tiang2_hijau_2.png',
+                audioPath: 'assets/audio/doa_antara_tiang2_hijau_2.ogg'),
+            DoaItem(
+                title: 'Doa Selepas Tiang Hijau Ketujuh 1/6',
+                imagePath:
+                    'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_1.png',
+                audioPath:
+                    'assets/audio/doa_selepas_tiang2_hijau_ketujuh_1.ogg'),
+            DoaItem(
+                title: 'Doa Selepas Tiang Hijau Ketujuh 2/6',
+                imagePath:
+                    'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_2.png',
+                audioPath:
+                    'assets/audio/doa_selepas_tiang2_hijau_ketujuh_2.ogg'),
+            DoaItem(
+                title: 'Doa Selepas Tiang Hijau Ketujuh 3/6',
+                imagePath:
+                    'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_3.png',
+                audioPath:
+                    'assets/audio/doa_selepas_tiang2_hijau_ketujuh_3.ogg'),
+            DoaItem(
+                title: 'Doa Selepas Tiang Hijau Ketujuh 4/6',
+                imagePath:
+                    'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_4.png',
+                audioPath:
+                    'assets/audio/doa_selepas_tiang2_hijau_ketujuh_4.ogg'),
+            DoaItem(
+                title: 'Doa Selepas Tiang Hijau Ketujuh 5/6',
+                imagePath:
+                    'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_5.png',
+                audioPath:
+                    'assets/audio/doa_selepas_tiang2_hijau_ketujuh_5.ogg'),
+            DoaItem(
+                title: 'Doa Selepas Tiang Hijau Ketujuh 6/6',
+                imagePath:
+                    'assets/images/doa/doa_selepas_tiang2_hijau_ketujuh_6.png',
+                audioPath:
+                    'assets/audio/doa_selepas_tiang2_hijau_ketujuh_6.ogg'),
+            DoaItem(
+                title: 'Doa Ketika Mendaki Bukit Marwah 1/3',
+                imagePath: 'assets/images/doa/doa_bukit_marwah_1.png',
+                audioPath: 'assets/audio/doa_bukit_marwah_1.ogg'),
+            DoaItem(
+                title: 'Doa Ketika Mendaki Bukit Marwah 2/3',
+                imagePath: 'assets/images/doa/doa_bukit_marwah_2.png',
+                audioPath: 'assets/audio/doa_bukit_marwah_2.ogg'),
+            DoaItem(
+                title: 'Doa Ketika Mendaki Bukit Marwah 3/3',
+                imagePath: 'assets/images/doa/doa_bukit_marwah_3.png',
+                audioPath: 'assets/audio/doa_bukit_marwah_3.ogg'),
+          ]),
       UmrahSubStep(id: 'tamat_saie', title: 'Tamat Sa\'ie', duas: [
         DoaItem(
-          title: 'Doa Selesai Sa\'ie 1',
-          imagePath: 'assets/images/doa/doa_selesai_saie_1.png',
-          audioPath: 'assets/audio/doa_selesai_saie_1.ogg',
-          checkPointStart : 18,),
+            title: 'Doa Selesai Sa\'ie 1/2',
+            imagePath: 'assets/images/doa/doa_selesai_saie_1.png',
+            audioPath: 'assets/audio/doa_selesai_saie_1.ogg'),
         DoaItem(
-          title: 'Doa Selesai Sa\'ie 2',
-          imagePath: 'assets/images/doa/doa_selesai_saie_2.png',
-          audioPath: 'assets/audio/doa_selesai_saie_2.ogg',
-          checkPointEnd:18,nextLabel : 'Tahallul'),
+            title: 'Doa Selesai Sa\'ie 2/2',
+            imagePath: 'assets/images/doa/doa_selesai_saie_2.png',
+            audioPath: 'assets/audio/doa_selesai_saie_2.ogg',
+            checkPointEnd: 16,
+            nextLabel: 'Tahallul'),
       ]),
     ],
   ),
@@ -883,23 +912,26 @@ final List<UmrahStep> umrahSteps = [
           title: 'Doa Bercukur / Bergunting',
           duas: [
             DoaItem(
-                title: 'Doa Bercukur 1',
-                imagePath: 'assets/images/doa/doa_bercukur_1.png',
-                audioPath: 'assets/audio/doa_bercukur_1.ogg',
-                checkPointStart : 19,),
+              title: 'Doa Bercukur 1/4',
+              imagePath: 'assets/images/doa/doa_bercukur_1.png',
+              audioPath: 'assets/audio/doa_bercukur_1.ogg',
+              checkPointStart: 17,
+              checkPointName: 'Tahallul',
+            ),
             DoaItem(
-                title: 'Doa Bercukur 2',
+                title: 'Doa Bercukur 2/4',
                 imagePath: 'assets/images/doa/doa_bercukur_2.png',
                 audioPath: 'assets/audio/doa_bercukur_2.ogg'),
             DoaItem(
-                title: 'Doa Bercukur 3',
+                title: 'Doa Bercukur 3/4',
                 imagePath: 'assets/images/doa/doa_bercukur_3.png',
                 audioPath: 'assets/audio/doa_bercukur_3.ogg'),
             DoaItem(
-                title: 'Doa Bercukur 4',
+                title: 'Doa Bercukur 4/4',
                 imagePath: 'assets/images/doa/doa_bercukur_4.png',
                 audioPath: 'assets/audio/doa_bercukur_4.ogg',
-                checkPointEnd:19,nextLabel : 'Selesai Umrah'),
+                checkPointEnd: 17,
+                nextLabel: 'Selesai Umrah'),
           ]),
     ],
   ),

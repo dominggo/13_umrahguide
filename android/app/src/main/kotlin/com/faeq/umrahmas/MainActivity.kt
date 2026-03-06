@@ -1,4 +1,4 @@
-package com.example.umrah_guide
+package com.faeq.umrahmas
 
 import io.flutter.embedding.android.FlutterActivity
 

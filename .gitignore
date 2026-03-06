@@ -62,6 +62,11 @@ build/
 # Flutter DevTools settings (IDE/tool-generated, not project-specific)
 devtools_options.yaml
 
+# Firebase config (must be added by each developer — do NOT commit)
+**/google-services.json
+**/GoogleService-Info.plist
+lib/firebase_options.dart
+
 # Generated files
 flutter_gen/
 *.g.dart

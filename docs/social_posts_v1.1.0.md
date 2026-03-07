@@ -48,18 +48,12 @@ Free! cuma doakan saya & family dapat ke Umrah syawal ini dengan selamat, sihat 
 ## Facebook Post — Full version (warm & personal)
 
 ```
-Assalamualaikum semua 🙏
-
-Sempena Nuzul Quran ni, nak share something yang dah lama nak
-cerita tapi baru ada masa nak tulis betul-betul 😅
-
-Jadi ceritanya, saya nak gi Umrah Syawal ni insyaAllah.
-Selama ni guna M-Umrah Pro — app lama tapi content dia memang
-lengkap & bagus, ada audio doa semua. Tapi masalahnya, app tu
-dah tak boleh run kat Android version baru. Habis la 😭
-
+Assalamualaikum semua
+Sempena Nuzul Quran ni, nak share android app pertama yang dibuat sendiri sepenuhnya.
+InsyaAllah plannya nak ke Umrah Syawal ni insyaAllah.
+Selama ni guna M-Umrah Pro — app lama tapi content dia memang lengkap & bagus, ada audio doa semua. Tapi masalahnya, app tu dah tak boleh run kat Android version baru.
 Setelah seminggu cuba pelbagai cara — force install, downgrade,
-semua gagal juga... akhirnya saya pun buat sendiri je lah 😂
+semua gagal juga... akhirnya saya pun buat sendiri je lah, menggunakan doa yang sama dari M-Umrah Pro 😂
 Nama dia: Panduan Umrah.
 
 Apa ada dalam app ni:
@@ -79,8 +73,7 @@ Nak download:
    → hantar email Google/Gmail korang kat saya (WA/DM)
    → saya add, lepas tu korang boleh install dari Play Store
 
-Yang paling penting sekali — tolong doakan saya, isteri dan
-anak-anak dapat ke Baitullah Syawal ini dengan selamat, sihat,
+Yang paling penting sekali — tolong doakan saya dan keluarga dapat ke Baitullah Syawal ini dengan selamat, sihat,
 dan Umrah kami diterima Allah sebagai Umrah yang mabrur 🤲🤲
 Terutamanya dengan situasi perang Iran sekarang ni...
 

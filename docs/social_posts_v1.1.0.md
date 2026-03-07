@@ -8,10 +8,10 @@
 
 ```
 Dulu guna M-Umrah Pro — app lama tapi content dia memang lengkap & bagus.
-Tapi dah tak boleh pakai kat Android baru 😅
+Tapi dah tak boleh pakai kat Android version baru 😅
 
-So... saya buat sendiri lah 😂
-Sebab nak gi Umrah Syawal ni, takkan nak pergi tanpa app kan 🕋
+Setelah seminggu cuma force install gagal..akhirnya... buat sendiri lah 😂
+Sebab InsyaAllah pi Umrah Syawal ni, nk ke 🕋 kena ada persediaan
 
 Thread 👇
 ```
@@ -23,12 +23,9 @@ Thread 👇
 ```
 "Panduan Umrah" — app yang saya buat tu:
 
-✅ 9 langkah Umrah — Ihram sampai Tawaf Wida'
-✅ 173 audio doa (offline, boleh dengar sambil baca)
-✅ GPS rekod setiap pusingan Tawaf & Sa'ie (17 checkpoint)
-✅ Peta Masjidil Haram offline
-✅ Ringkasan perjalanan — boleh export PDF/PNG
-✅ 100% percuma
+✅ langkah - langkah Umrah — Ihram sampai Tawaf Wida', lengkap dengan doa & audio
+✅ Rekod dan Ringkasan perjalanan umrah , bersama reminder kalau ada pusingan tak lengkap. insyaAllah tiada was-was lagi
+✅ 100% percuma & tanpa Ads
 ```
 
 ---
@@ -36,15 +33,14 @@ Thread 👇
 ### Tweet 3 — Download + doa request
 
 ```
-Nak download:
+Sempena Nuzul Quran ni,nk share dengan semua :
+📲 APK → http://github.com/dominggo/13_umrahguide/releases
 
-📲 APK → github.com/dominggo/13_umrahguide/releases
 🏪 Play Store tester → DM/WA saya email Google
 
-Yang paling penting — doakan saya & family dapat ke Umrah
-bulan depan dengan selamat, sihat & mabrur 🤲🤲
+Free! cuma doakan saya & family dapat ke Umrah syawal ini dengan selamat, sihat & mabrur 🤲🤲, terutamanya dengan perang iran ni
 
-#PanduanUmrah #Umrah #Syawal
+#PanduanUmrah #Umrah
 ```
 
 ---
@@ -54,30 +50,25 @@ bulan depan dengan selamat, sihat & mabrur 🤲🤲
 ```
 Assalamualaikum semua 🙏
 
-Nak cerita sikit pasal satu projek kecil yang dah siap haritu —
-tapi baru berani share sekarang hehe 😅
+Sempena Nuzul Quran ni, nak share something yang dah lama nak
+cerita tapi baru ada masa nak tulis betul-betul 😅
 
 Jadi ceritanya, saya nak gi Umrah Syawal ni insyaAllah.
-Selama ni guna M-Umrah Pro — app lama dari USM, content dia memang
-tip top, lengkap dengan audio doa dan semua. Tapi masalahnya, app tu
-dah tak boleh run kat Android baru. Habis la 😭
+Selama ni guna M-Umrah Pro — app lama tapi content dia memang
+lengkap & bagus, ada audio doa semua. Tapi masalahnya, app tu
+dah tak boleh run kat Android version baru. Habis la 😭
 
-So daripada panic, saya pun... buat sendiri je lah 😂
+Setelah seminggu cuba pelbagai cara — force install, downgrade,
+semua gagal juga... akhirnya saya pun buat sendiri je lah 😂
 Nama dia: Panduan Umrah.
 
 Apa ada dalam app ni:
-🎵 173 audio bacaan doa — offline, boleh dengar & ikut
-🖼️ 176 gambar doa (Arab + transliterasi + rumi)
-📍 17 checkpoint GPS — rekod masa mula & tamat tiap pusingan
-   Tawaf & Sa'ie secara automatik
-🗺️ Peta Masjidil Haram offline (tak perlu data)
-📄 Lepas selesai Umrah — ada ringkasan perjalanan lengkap,
-   boleh save/share sebagai PDF atau gambar kenangan
-🔖 Bookmark doa kegemaran
-🔍 Carian doa
-📵 Semua 100% offline — tak payah risau coverage dalam Masjid
-
-Percuma. Takde ads. Takde subscription.
+📖 Langkah-langkah Umrah — Ihram sampai Tawaf Wida', lengkap
+   dengan doa & audio untuk setiap langkah
+📍 Rekod dan Ringkasan perjalanan Umrah — ada reminder kalau
+   ada pusingan Tawaf atau Sa'ie yang tak lengkap.
+   InsyaAllah tiada was-was lagi 🙏
+💰 100% percuma & tanpa Ads. Langsung.
 
 Nak download:
 1️⃣ APK terus (paling senang — install macam biasa):
@@ -89,8 +80,11 @@ Nak download:
    → saya add, lepas tu korang boleh install dari Play Store
 
 Yang paling penting sekali — tolong doakan saya, isteri dan
-anak-anak dapat ke Baitullah bulan depan dengan selamat, sihat,
+anak-anak dapat ke Baitullah Syawal ini dengan selamat, sihat,
 dan Umrah kami diterima Allah sebagai Umrah yang mabrur 🤲🤲
+Terutamanya dengan situasi perang Iran sekarang ni...
 
 Doakan kami ye semua 🥹
+
+#PanduanUmrah #Umrah
 ```

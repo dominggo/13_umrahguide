@@ -50,5 +50,6 @@ flutter:
     - assets/images/overview/
     - assets/images/locations/
     - assets/images/misc/
+    - assets/images/custom_icons/
     - assets/audio/
     - assets/text/

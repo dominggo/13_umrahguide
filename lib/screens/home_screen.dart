@@ -60,23 +60,23 @@ class _HomeScreenState extends State<HomeScreen> {
         onDestinationSelected: (i) => setState(() => _selectedTab = i),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
+            icon: _NavIcon('assets/images/custom_icons/nav_menu.png', Icons.menu_book_outlined),
+            selectedIcon: _NavIcon('assets/images/custom_icons/nav_menu_active.png', Icons.menu_book),
             label: 'Menu',
           ),
           NavigationDestination(
-            icon: Icon(Icons.directions_walk_outlined),
-            selectedIcon: Icon(Icons.directions_walk),
+            icon: _NavIcon('assets/images/custom_icons/nav_umrah.png', Icons.directions_walk_outlined),
+            selectedIcon: _NavIcon('assets/images/custom_icons/nav_umrah_active.png', Icons.directions_walk),
             label: 'Umrah',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
+            icon: _NavIcon('assets/images/custom_icons/nav_sejarah.png', Icons.history_outlined),
+            selectedIcon: _NavIcon('assets/images/custom_icons/nav_sejarah_active.png', Icons.history),
             label: 'Sejarah',
           ),
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
+            icon: _NavIcon('assets/images/custom_icons/nav_peta.png', Icons.map_outlined),
+            selectedIcon: _NavIcon('assets/images/custom_icons/nav_peta_active.png', Icons.map),
             label: 'Peta',
           ),
         ],
@@ -192,7 +192,19 @@ class _StepCard extends StatelessWidget {
     Color(0xFF00695C), // Lain-lain Doa
   ];
 
-  static const _stepIcons = [
+  static const _stepIconAssets = [
+    'assets/images/custom_icons/step_ihram.png',
+    'assets/images/custom_icons/step_masuk_makkah.png',
+    'assets/images/custom_icons/step_melihat_kaabah.png',
+    'assets/images/custom_icons/step_tawaf.png',
+    'assets/images/custom_icons/step_solat_tawaf.png',
+    'assets/images/custom_icons/step_saie.png',
+    'assets/images/custom_icons/step_tahallul.png',
+    'assets/images/custom_icons/step_tawaf_wida.png',
+    'assets/images/custom_icons/step_lain_lain.png',
+  ];
+
+  static const _stepIconsFallback = [
     Icons.spa,
     Icons.location_city,
     Icons.visibility,
@@ -201,14 +213,15 @@ class _StepCard extends StatelessWidget {
     Icons.directions_walk,
     Icons.content_cut,
     Icons.favorite,
-    Icons.auto_stories, // Lain-lain Doa
+    Icons.auto_stories,
   ];
 
   @override
   Widget build(BuildContext context) {
     final idx = umrahSteps.indexOf(step);
     final color = _stepColors[idx % _stepColors.length];
-    final icon = _stepIcons[idx % _stepIcons.length];
+    final iconAsset = _stepIconAssets[idx % _stepIconAssets.length];
+    final iconFallback = _stepIconsFallback[idx % _stepIconsFallback.length];
 
     return Card(
       clipBehavior: Clip.hardEdge,
@@ -225,7 +238,14 @@ class _StepCard extends StatelessWidget {
               height: 80,
               color: color,
               child: Center(
-                child: Icon(icon, color: Colors.white, size: 40),
+                child: Image.asset(
+                  iconAsset,
+                  width: 40,
+                  height: 40,
+                  color: Colors.white,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(iconFallback, color: Colors.white, size: 40),
+                ),
               ),
             ),
             Expanded(
@@ -400,6 +420,24 @@ class _BookmarksTab extends StatelessWidget {
           ],
         );
       }).toList(),
+    );
+  }
+}
+
+// ─── Nav Icon with PNG fallback ───────────────────────────────────────────────
+
+class _NavIcon extends StatelessWidget {
+  final String assetPath;
+  final IconData fallback;
+  const _NavIcon(this.assetPath, this.fallback);
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      assetPath,
+      width: 24,
+      height: 24,
+      errorBuilder: (_, __, ___) => Icon(fallback, size: 24),
     );
   }
 }

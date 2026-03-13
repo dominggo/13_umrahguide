@@ -55,10 +55,15 @@ class _SplashScreenState extends State<SplashScreen>
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: const Icon(
-                    Icons.mosque,
-                    size: 72,
-                    color: Color(0xFF1B5E20),
+                  child: Image.asset(
+                    'assets/images/custom_icons/splash_icon.png',
+                    width: 72,
+                    height: 72,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.mosque,
+                      size: 72,
+                      color: Color(0xFF1B5E20),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),

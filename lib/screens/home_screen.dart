@@ -188,32 +188,29 @@ class _StepCard extends StatelessWidget {
     Color(0xFFE65100),
     Color(0xFF006064),
     Color(0xFF37474F),
-    Color(0xFF5D4037),
-    Color(0xFF00695C), // Lain-lain Doa
+    Color(0xFF00695C),
   ];
 
   static const _stepIconAssets = [
     'assets/images/custom_icons/step_ihram.png',
-    'assets/images/custom_icons/step_masuk_makkah.png',
-    'assets/images/custom_icons/step_melihat_kaabah.png',
     'assets/images/custom_icons/step_tawaf.png',
     'assets/images/custom_icons/step_solat_tawaf.png',
     'assets/images/custom_icons/step_saie.png',
     'assets/images/custom_icons/step_tahallul.png',
     'assets/images/custom_icons/step_tawaf_wida.png',
     'assets/images/custom_icons/step_lain_lain.png',
+    'assets/images/custom_icons/step_panduan.png',
   ];
 
   static const _stepIconsFallback = [
     Icons.spa,
-    Icons.location_city,
-    Icons.visibility,
     Icons.rotate_right,
     Icons.hotel_class,
     Icons.directions_walk,
     Icons.content_cut,
     Icons.favorite,
     Icons.auto_stories,
+    Icons.menu_book,
   ];
 
   @override

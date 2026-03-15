@@ -5,14 +5,13 @@ Drop your PNG files here. All icons fall back to Material Icons if the file is m
 
 STEP CARD ICONS (40x40 display size, recommended source: 80x80px or larger)
   step_ihram.png          — Step 1: Ihram
-  step_masuk_makkah.png   — Step 2: Masuk Makkah
-  step_melihat_kaabah.png — Step 3: Melihat Kaabah
-  step_tawaf.png          — Step 4: Tawaf
-  step_solat_tawaf.png    — Step 5: Solat Tawaf
-  step_saie.png           — Step 6: Sa'ei
-  step_tahallul.png       — Step 7: Tahallul
-  step_tawaf_wida.png     — Step 8: Tawaf Wida'
-  step_lain_lain.png      — Step 9: Lain-lain Doa
+  step_tawaf.png          — Step 2: Tawaf
+  step_solat_tawaf.png    — Step 3: Solat Sunat Tawaf
+  step_saie.png           — Step 4: Sa'ie
+  step_tahallul.png       — Step 5: Tahallul
+  step_tawaf_wida.png     — Step 6: Tawaf Wida'
+  step_lain_lain.png      — Step 7: Lain-lain Doa
+  step_panduan.png        — Step 8: Panduan dan Tips
 
 BOTTOM NAV ICONS (24x24 display size, recommended source: 48x48px or larger)
   nav_menu.png            — Menu tab (unselected)

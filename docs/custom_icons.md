@@ -15,14 +15,13 @@ Shown in the 3×3 grid on the Menu tab. Displayed at **40×40 px** inside a colo
 | Filename | Step |
 |---|---|
 | `step_ihram.png` | 1. Ihram |
-| `step_masuk_makkah.png` | 2. Masuk Makkah |
-| `step_melihat_kaabah.png` | 3. Melihat Kaabah |
-| `step_tawaf.png` | 4. Tawaf |
-| `step_solat_tawaf.png` | 5. Solat Tawaf |
-| `step_saie.png` | 6. Sa'ei |
-| `step_tahallul.png` | 7. Tahallul |
-| `step_tawaf_wida.png` | 8. Tawaf Wida' |
-| `step_lain_lain.png` | 9. Lain-lain Doa |
+| `step_tawaf.png` | 2. Tawaf |
+| `step_solat_tawaf.png` | 3. Solat Sunat Tawaf |
+| `step_saie.png` | 4. Sa'ie |
+| `step_tahallul.png` | 5. Tahallul |
+| `step_tawaf_wida.png` | 6. Tawaf Wida' |
+| `step_lain_lain.png` | 7. Lain-lain Doa |
+| `step_panduan.png` | 8. Panduan dan Tips |
 
 > Icons are tinted **white** automatically via Flutter's `color: Colors.white` — so use a solid single-colour PNG or a white icon on transparent background.
 

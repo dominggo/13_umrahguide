@@ -57,6 +57,7 @@ build/
 
 # Misc
 *.log
+*.hprof
 # pubspec.lock should be committed for apps (not libraries)
 
 # Flutter DevTools settings (IDE/tool-generated, not project-specific)

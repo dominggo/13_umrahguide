@@ -6,7 +6,7 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 
 ## Screen Overview
 
-### 1. Home Screen — Menu Tab
+### 1. `HomeScreen` — Menu Tab
 ```
 ┌─────────────────────────────────────────────────┐
 │ Panduan Umrah                          🔍  🔖   │  ← AppBar (search + bookmark)
@@ -25,7 +25,49 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 └─────────────────────────────────────────────────┘
 ```
 
-### 2. Doa Viewer Screen
+### 2. `StepDetailScreen` — Step Overview
+```
+┌─────────────────────────────────────────────────┐
+│ ←  Tawaf                                        │  ← AppBar with step title
+├─────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────┐  │
+│  │  Tawaf                                    │  │
+│  │  Mengelilingi Ka'abah sebanyak 7 pusingan │  │  ← Green header banner
+│  │  [ 7 Bahagian ]  [ 42 Doa ]              │  │
+│  └───────────────────────────────────────────┘  │
+│                                                 │
+│  ┌───────────────────────────────────────────┐  │
+│  │ ①  Niat Tawaf                  1 doa  ›  │  │
+│  ├───────────────────────────────────────────┤  │
+│  │ ②  Tawaf Pusingan 1            6 doa  ›  │  │  ← Substep list tiles
+│  ├───────────────────────────────────────────┤  │
+│  │ ③  Tawaf Pusingan 2            6 doa  ›  │  │
+│  ├───────────────────────────────────────────┤  │
+│  │  · · ·                                    │  │
+│  └───────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────┘
+```
+
+### 3. `DoaListScreen` — Doa Thumbnails
+```
+┌─────────────────────────────────────────────────┐
+│ ←  Tawaf Pusingan 1                             │
+├─────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────┐  │
+│  │ ┌──────┐  Doa Permulaan Tawaf         🔖 │  │
+│  │ │ img  │  Dimulakan dengan Bismillah…    │  │  ← Doa card with thumbnail
+│  │ └──────┘  [🖼 Gambar] [🔊 Audio]  ▶     │  │    quick-play + bookmark
+│  └───────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────┐  │
+│  │ ┌──────┐  Doa Semasa Tawaf           🔖 │  │
+│  │ │ img  │  Rabbana atina fid-dunya…       │  │
+│  │ └──────┘  [🖼 Gambar] [🔊 Audio]  ▶     │  │
+│  └───────────────────────────────────────────┘  │
+│  · · ·                                          │
+└─────────────────────────────────────────────────┘
+```
+
+### 4. `DoaViewerScreen` — Full-Screen Doa Reader
 ```
 ┌─────────────────────────────────────────────────┐
 │ ←  Tawaf — Pusingan 1    ① ② ③ ④ ⑤ ⑥ ⑦    │  ← Round indicators (Tawaf/Sa'ie)
@@ -45,36 +87,94 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 └─────────────────────────────────────────────────┘
 ```
 
-### 3. Journey Screen — Umrah Tab
+### 5. `UmrahIniScreen` — Umrah Journey Tab
 ```
 ┌─────────────────────────────────────────────────┐
 │ Panduan Umrah                          🔍  🔖   │
 ├─────────────────────────────────────────────────┤
+│  GPS Aktif · Ka'abah Zone          Lokasi Manual│  ← Compact GPS row
+├─────────────────────────────────────────────────┤
 │  ┌───────────────────────────────────────────┐  │
-│  │  GPS: Ka'abah Zone — 8 m              ●  │  │  ← Live zone detection
+│  │              [ Mulakan Umrah ]            │  │  ← Hidden once journey active
 │  └───────────────────────────────────────────┘  │
 │                                                 │
-│  ┌───────────────────────────────────────────┐  │
-│  │          [ Mulakan Umrah ]                │  │  ← Start journey button (CP1)
-│  │                                           │  │
-│  │  Ihram  ·─· Tawaf ·─· S.Tawaf ·─· Sa'ie │  │  ← Checkpoint progress dots
-│  │   CP1     CP2─8     CP9      CP10─16  CP17│  │
+│  ┌───────────────────────────────────────────┐  │  ← Resume card (journey active)
+│  │  ▶  Sambung Umrah                      ›  │  │
+│  │     Tawaf Pusingan 3                      │  │
 │  └───────────────────────────────────────────┘  │
 │                                                 │
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐   │
-│  │  1.Ihram  │  │  2.Masuk  │  │ 3.Ka'abah │   │  ← Step grid (tap to open doas)
-│  └───────────┘  └───────────┘  └───────────┘   │
+│  Perkembangan Umrah                             │
+│  ┌───────────────────────────────────────────┐  │
+│  │ ①  Ihram                           ●  ›  │  │
+│  ├───────────────────────────────────────────┤  │
+│  │ ②  Tawaf      ● ● ● ○ ○ ○ ○       ›  │  │  ← Round dots (green=done)
+│  ├───────────────────────────────────────────┤  │
+│  │ ③  Solat Sunat Tawaf               ○  ›  │  │
+│  ├───────────────────────────────────────────┤  │
+│  │ ④  Sa'ie      ○ ○ ○ ○ ○ ○ ○       ›  │  │
+│  ├───────────────────────────────────────────┤  │
+│  │ ⑤  Tahallul                        ○  ›  │  │
+│  └───────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────┤
+│         [ Selesai Ibadah Umrah ]                │  ← Fixed bottom (journey active)
 ├─────────────────────────────────────────────────┤
 │    Menu    │  [Umrah]  │  Sejarah  │    Peta    │
 └─────────────────────────────────────────────────┘
 ```
 
-### 4. Peta (Map) Screen
+### 6. `UmrahTamatScreen` — Journey Summary
 ```
 ┌─────────────────────────────────────────────────┐
-│ Panduan Umrah                          🔍  🔖   │
+│ ←  Ringkasan Perjalanan              🖼    📄   │  ← PNG + PDF export
 ├─────────────────────────────────────────────────┤
-│  Zone: Ka'abah — 12 m                           │  ← Live zone status bar
+│  ┌───────────────────────────────────────────┐  │
+│  │  Umrah ke-3                               │  │
+│  │  Panduan Umrah        Tempoh: 3j 42m      │  │  ← Green summary header
+│  │                       Jarak:  4.21 km     │  │
+│  │  Mula: 12/3/2026 07:00                    │  │
+│  └───────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────┐  │
+│  │  [OSM Map with GPS polyline]              │  │  ← Map (hidden if no GPS)
+│  └───────────────────────────────────────────┘  │
+│  Rekod Perjalanan                               │
+│  ● CP1   Ihram                 07:00 – 07:28   │
+│  ▼ Tawaf (3/7)  07:45 – 08:30              ▶  │  ← Collapsible; shows x/7
+│  ● CP9   Solat Sunat Tawaf     08:35 – 08:50   │
+│  ▼ Sa'ie (0/7)  Tidak dimulakan            ▶  │  ← Red if none started
+│  ⚠ CP17  Tahallul   Tidak dimulakan            │  ← Skipped tile (red)
+│  ─────────────────────────────────────────────  │
+│  ⚠  Semak dan pastikan Umrah ini lengkap        │  ← Amber footer (incomplete)
+└─────────────────────────────────────────────────┘
+```
+
+### 7. `UmrahAllScreen` — Journey History (Sejarah Tab)
+```
+┌─────────────────────────────────────────────────┐
+│ ←  Sejarah Umrah — 3 kali selesai               │  ← Total count in title
+├─────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────┐  │
+│  │ 🕌  Umrah ke-3          12/3/2026 07:00  │  │
+│  │  3   3j 42m  ·  4.21 km              ›  🗑 │  │  ← Tap → UmrahTamatScreen
+│  └───────────────────────────────────────────┘  │  ← Long-press → edit times
+│  ┌───────────────────────────────────────────┐  │  ← Swipe left → delete
+│  │ 🕌  Umrah ke-2          05/2/2026 06:15  │  │
+│  │  2   4j 10m  ·  4.87 km              ›  🗑 │  │
+│  └───────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────┐  │
+│  │ 🕌  Umrah ke-1          20/1/2026 05:50  │  │
+│  │  1   3j 55m  ·  4.60 km              ›  🗑 │  │
+│  └───────────────────────────────────────────┘  │
+├─────────────────────────────────────────────────┤
+│    Menu    │   Umrah   │  [Sejarah] │    Peta   │
+└─────────────────────────────────────────────────┘
+```
+
+### 8. `MapScreen` — Peta Masjidil Haram Tab
+```
+┌─────────────────────────────────────────────────┐
+│ Peta Masjidil Haram                    📍       │  ← "My Location" button
+├─────────────────────────────────────────────────┤
+│  ✅ Anda di: Ka'abah                            │  ← Green zone status bar
 ├─────────────────────────────────────────────────┤
 │                                                 │
 │   · · · · · · [OpenStreetMap] · · · · · · · ·  │
@@ -86,31 +186,48 @@ A Flutter Android app providing a complete step-by-step guide for performing Umr
 │               [G] Multazam · · ← GPS trail     │
 │                       [G] Zamzam               │
 │   [G] Safa                        [G] Marwah   │
-│                                                 │
+│                                                 │  ← Long-press → manual zone
 ├─────────────────────────────────────────────────┤
 │    Menu    │   Umrah   │  Sejarah  │   [Peta]   │
 └─────────────────────────────────────────────────┘
 ```
+Tap a zone marker → bottom sheet with description + related duas.
 
-### 5. Journey Summary Screen
+### 9. `SearchScreen` — Cari Doa
 ```
 ┌─────────────────────────────────────────────────┐
-│ ←  Ringkasan Perjalanan              PNG   PDF  │  ← Export buttons
+│ ←  🔍 Cari doa...                               │  ← Search field (AppBar)
 ├─────────────────────────────────────────────────┤
 │  ┌───────────────────────────────────────────┐  │
-│  │  [OSM Map]       GPS route polyline:      │  │
-│  │                    ·····                  │  │  ← Map with recorded track
-│  │          ·····~                           │  │
+│  │  Doa Qunut Nazilah                        │  │
+│  │  Ihram › Doa Semasa Ihram                 │  │  ← step › substep breadcrumb
 │  └───────────────────────────────────────────┘  │
-│  Tempoh: 3j 42m          Jarak: 4.2 km         │
-│  ─────────────────────────────────────────────  │
-│  ● CP1   Ihram                 08:05 – 08:31   │
-│  ▼ Tawaf (CP2–8)               08:45 – 09:50 ▶ │  ← Collapsible group
-│  ● CP9   Solat Sunat Tawaf     09:52 – 10:05   │
-│  ▼ Sa'ie (CP10–16)             10:10 – 11:15 ▶ │  ← Collapsible group
-│  ● CP17  Tahallul              11:20 – 11:35   │
-│  ─────────────────────────────────────────────  │
-│           Alhamdulillah. Umrah selesai.         │
+│  ┌───────────────────────────────────────────┐  │
+│  │  Doa Talbiah                              │  │
+│  │  Ihram › Talbiah                          │  │
+│  └───────────────────────────────────────────┘  │
+│  · · ·  (results update on every keystroke)     │
+└─────────────────────────────────────────────────┘
+```
+Tap result → `DoaViewerScreen` at that doa.
+
+### 10. `_BookmarksScreen` — Simpanan
+```
+┌─────────────────────────────────────────────────┐
+│ ←  Simpanan                                     │
+├─────────────────────────────────────────────────┤
+│  Tawaf                                          │  ← Step group header
+│  ┌───────────────────────────────────────────┐  │
+│  │ ┌──────┐  Doa Semasa Tawaf          🔖   │  │
+│  │ │ img  │  Tawaf Pusingan 1               │  │  ← Tap → DoaViewerScreen
+│  │ └──────┘                                  │  │  ← Tap 🔖 → remove bookmark
+│  └───────────────────────────────────────────┘  │
+│  Sa'ie                                          │
+│  ┌───────────────────────────────────────────┐  │
+│  │ ┌──────┐  Doa Semasa Sa'ie          🔖   │  │
+│  │ │ img  │  Sa'ie Pusingan 1               │  │
+│  │ └──────┘                                  │  │
+│  └───────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────┘
 ```
 

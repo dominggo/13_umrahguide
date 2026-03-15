@@ -49,14 +49,14 @@ Use `setup_and_run.bat` or `build_apk.bat` as shortcuts for common tasks.
 SplashScreen (3 s auto-nav)
   └── HomeScreen (NavigationBar, 4 tabs)
         ├── Tab 0: Menu — grid of 9 UmrahStep cards
-        │     └── StepDetailScreen → SubstepScreen (doa thumbnails)
+        │     └── StepDetailScreen → DoaListScreen (doa thumbnails)
         │           └── DoaViewerScreen (PageView + audio + tawaf/saie round tracking)
-        ├── Tab 1: Umrah — JourneyScreen (checkpoint-based journey; GPS tracking)
+        ├── Tab 1: Umrah — UmrahIniScreen (checkpoint-based journey; GPS tracking)
         │     ├── StepDetailScreen (fromJourney: true) → DoaViewerScreen (flat navigation)
-        │     └── End journey → JourneySummaryScreen (map + timeline + PNG/PDF export)
-        ├── Tab 2: Sejarah — JourneyHistoryScreen (list of completed journeys)
-        │     └── JourneySummaryScreen (view past journey)
-        └── Tab 3: Peta — MakkahMapScreen (offline OSM + GPS dot + zone markers)
+        │     └── End journey → UmrahTamatScreen (map + timeline + PNG/PDF export)
+        ├── Tab 2: Sejarah — UmrahAllScreen (list of completed journeys)
+        │     └── UmrahTamatScreen (view past journey)
+        └── Tab 3: Peta — MapScreen (offline OSM + GPS dot + zone markers)
 
 AppBar actions (all tabs):
   - Search icon → UmrahSearchDelegate (search across all duas)
@@ -80,10 +80,11 @@ AppBar actions (all tabs):
 | `lib/models/journey_history_provider.dart` | Journey CRUD + JSON file persistence |
 | `lib/models/umrah_location.dart` | `UmrahLocation` model + 7 Masjidil Haram zone coordinates |
 | `lib/screens/doa_viewer_screen.dart` | Full-screen doa PageView, auto-play logic, round dialogs |
-| `lib/screens/journey_screen.dart` | Tab 1 — checkpoint-based Umrah journey; GPS zone display; 5-step tiles; start/end flow |
-| `lib/screens/journey_history_screen.dart` | Tab 2 — list of completed journey records; opens JourneySummaryScreen |
-| `lib/screens/journey_summary_screen.dart` | Journey summary with OSM map, checkpoint timeline, PNG/PDF export |
-| `lib/screens/makkah_map_screen.dart` | Tab 3 — offline OSM map with GPS overlay and zone markers |
+| `lib/screens/doa_list_screen.dart` | Doa thumbnails with quick play + bookmark toggle (`DoaListScreen`) |
+| `lib/screens/umrah_ini_screen.dart` | Tab 1 — checkpoint-based Umrah journey; GPS zone display; 5-step tiles; start/end flow (`UmrahIniScreen`) |
+| `lib/screens/umrah_all_screen.dart` | Tab 2 — list of completed journey records; opens UmrahTamatScreen (`UmrahAllScreen`) |
+| `lib/screens/umrah_tamat_screen.dart` | Journey summary with OSM map, checkpoint timeline, PNG/PDF export (`UmrahTamatScreen`) |
+| `lib/screens/map_screen.dart` | Tab 3 — offline OSM map with GPS overlay and zone markers (`MapScreen`) |
 | `lib/utils/map_tile_cache.dart` | Shared in-memory OSM tile cache (singleton) |
 
 ## Asset Conventions

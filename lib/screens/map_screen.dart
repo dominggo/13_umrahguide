@@ -12,14 +12,14 @@ import 'doa_viewer_screen.dart';
 
 const _makkahCenter = LatLng(21.4225, 39.8262);
 
-class MakkahMapScreen extends StatefulWidget {
-  const MakkahMapScreen({super.key});
+class MapScreen extends StatefulWidget {
+  const MapScreen({super.key});
 
   @override
-  State<MakkahMapScreen> createState() => _MakkahMapScreenState();
+  State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MakkahMapScreenState extends State<MakkahMapScreen> {
+class _MapScreenState extends State<MapScreen> {
   final MapController _mapCtrl = MapController();
 
   @override

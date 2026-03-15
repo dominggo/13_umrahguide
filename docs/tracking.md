@@ -133,7 +133,7 @@ User taps "Tamatkan Umrah ini" (Tahallul step only)
       → All internal state cleared
   → history.addOrUpdateJourney(record)
   → prog.clearProgress()
-  → Navigate to JourneySummaryScreen
+  → Navigate to UmrahTamatScreen
 
 User taps "Batalkan Umrah" (any journey step except tahallul)
   → Confirm dialog
@@ -159,7 +159,7 @@ The persistent bottom button is shown only for the 5 journey steps:
 | Journey active, step ≠ `tahallul` | `OutlinedButton` "Batalkan Umrah" (red outline) | Confirmation dialog → `snapshotAndClear` |
 | Journey active, step = `tahallul` | `FilledButton` "Tamatkan Umrah ini" (dark green) | Confirmation dialog → `finalizeJourney` → JourneySummaryScreen |
 
-The same "Mulakan Umrah" button also appears in Tab 1 (Panduan Aliran) and is hidden once
+The same "Mulakan Umrah" button also appears in Tab 1 (`UmrahIniScreen`) and is hidden once
 `loc.isJourneyActive` becomes true.
 
 ---

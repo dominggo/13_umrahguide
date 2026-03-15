@@ -16,14 +16,14 @@ import '../models/journey_history_provider.dart';
 import '../models/progress_provider.dart';
 import '../data/umrah_data.dart';
 
-class JourneySummaryScreen extends StatefulWidget {
+class UmrahTamatScreen extends StatefulWidget {
   final DateTime startTime;
   final DateTime endTime;
   final List<JourneyPoint> gpsTrack;
   final List<CheckpointRecord> checkpoints;
   final String? journeyId; // non-null when viewing from history
 
-  const JourneySummaryScreen({
+  const UmrahTamatScreen({
     super.key,
     required this.startTime,
     required this.endTime,
@@ -33,10 +33,10 @@ class JourneySummaryScreen extends StatefulWidget {
   });
 
   @override
-  State<JourneySummaryScreen> createState() => _JourneySummaryScreenState();
+  State<UmrahTamatScreen> createState() => _UmrahTamatScreenState();
 }
 
-class _JourneySummaryScreenState extends State<JourneySummaryScreen> {
+class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
   final _screenshotCtrl = ScreenshotController();
   bool _saved = false;
 

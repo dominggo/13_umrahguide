@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/journey_history_provider.dart';
 import '../models/journey_record.dart';
-import 'journey_summary_screen.dart';
+import 'umrah_tamat_screen.dart';
 
-class JourneyHistoryScreen extends StatelessWidget {
-  const JourneyHistoryScreen({super.key});
+class UmrahAllScreen extends StatelessWidget {
+  const UmrahAllScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +99,7 @@ class _JourneyTile extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => JourneySummaryScreen(
+              builder: (_) => UmrahTamatScreen(
                 startTime: record.startTime,
                 endTime: record.endTime,
                 gpsTrack: record.gpsTrack,

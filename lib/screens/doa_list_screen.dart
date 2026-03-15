@@ -5,12 +5,12 @@ import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
 import 'doa_viewer_screen.dart';
 
-class SubStepScreen extends StatelessWidget {
+class DoaListScreen extends StatelessWidget {
   final UmrahSubStep subStep;
   final String stepTitle;
   final String stepId;
 
-  const SubStepScreen({
+  const DoaListScreen({
     super.key,
     required this.subStep,
     required this.stepTitle,

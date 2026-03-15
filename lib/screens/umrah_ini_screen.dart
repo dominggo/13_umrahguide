@@ -7,13 +7,13 @@ import '../models/progress_provider.dart';
 import '../models/umrah_location.dart';
 import '../models/umrah_step.dart';
 import '../services/analytics_service.dart';
-import 'journey_summary_screen.dart';
+import 'umrah_tamat_screen.dart';
 import 'step_detail_screen.dart';
 import 'doa_viewer_screen.dart';
 import '../models/journey_history_provider.dart';
 
-class JourneyScreen extends StatelessWidget {
-  const JourneyScreen({super.key});
+class UmrahIniScreen extends StatelessWidget {
+  const UmrahIniScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -313,7 +313,7 @@ class JourneyScreen extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => JourneySummaryScreen(
+          builder: (_) => UmrahTamatScreen(
             startTime: record.startTime,
             endTime: record.endTime,
             gpsTrack: record.gpsTrack,

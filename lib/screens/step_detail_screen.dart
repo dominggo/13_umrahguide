@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/umrah_step.dart';
-import 'substep_screen.dart';
+import 'doa_list_screen.dart';
 import 'doa_viewer_screen.dart';
 
 class StepDetailScreen extends StatelessWidget {
@@ -99,7 +99,7 @@ class StepDetailScreen extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => SubStepScreen(
+          builder: (_) => DoaListScreen(
             subStep: sub,
             stepTitle: step.title,
             stepId: step.id,

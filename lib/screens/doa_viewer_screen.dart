@@ -10,7 +10,7 @@ import '../models/progress_provider.dart';
 import '../models/location_provider.dart';
 import '../models/journey_history_provider.dart';
 import '../services/analytics_service.dart';
-import 'journey_summary_screen.dart';
+import 'umrah_tamat_screen.dart';
 
 /// Flat entry combining a substep and one of its duas, for fullStep navigation.
 typedef _FlatEntry = ({UmrahSubStep substep, DoaItem doa});
@@ -310,7 +310,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     if (ctx.mounted) {
       Navigator.of(ctx).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => JourneySummaryScreen(
+          builder: (_) => UmrahTamatScreen(
             startTime: record.startTime,
             endTime: record.endTime,
             gpsTrack: record.gpsTrack,
@@ -751,8 +751,8 @@ class _RoundStatusIndicator extends StatelessWidget {
 
   // Checkpoint numbers for tawaf rounds 1–7 (CP2–CP8)
   static const _tawafCPs = [2, 3, 4, 5, 6, 7, 8];
-  // Checkpoint numbers for saie rounds 1–7 (CP11–CP17)
-  static const _saieCPs = [11, 12, 13, 14, 15, 16, 17];
+  // Checkpoint numbers for saie rounds 1–7 (CP10–CP16)
+  static const _saieCPs = [10, 11, 12, 13, 14, 15, 16];
 
   const _RoundStatusIndicator({
     required this.prefix,

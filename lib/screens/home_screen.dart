@@ -5,9 +5,9 @@ import '../models/umrah_step.dart';
 import '../models/bookmark_provider.dart';
 import 'step_detail_screen.dart';
 import 'search_screen.dart';
-import 'makkah_map_screen.dart';
-import 'journey_history_screen.dart';
-import 'journey_screen.dart';
+import 'map_screen.dart';
+import 'umrah_all_screen.dart';
+import 'umrah_ini_screen.dart';
 import 'doa_viewer_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,9 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static const _tabs = [
     _MenuTab(),
-    JourneyScreen(),
-    JourneyHistoryScreen(),
-    MakkahMapScreen(),
+    UmrahIniScreen(),
+    UmrahAllScreen(),
+    MapScreen(),
   ];
 
   @override

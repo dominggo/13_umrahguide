@@ -5,9 +5,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Add Flutter to PATH (required each shell session if not in system PATH)
-set PATH=C:\flutter\bin;%PATH%
-
 # Install dependencies
 flutter pub get
 
@@ -16,22 +13,26 @@ flutter run
 
 # Build release APK
 flutter build apk --release
-# Output: build\app\outputs\flutter-apk\app-release.apk
+# Output: build/app/outputs/flutter-apk/app-release.apk
 
 # Build debug APK
 flutter build apk --debug
+
+# Build app bundle for Play Store
+flutter build appbundle --release
+# Output: build/app/outputs/bundle/release/app-release.aab
+
+# Lint check
+flutter analyze
 
 # Run tests
 flutter test
 
 # Run a single test file
 flutter test test/widget_test.dart
-
-# Lint check
-flutter analyze
 ```
 
-Use `setup_and_run.bat` or `build_apk.bat` as shortcuts for common tasks.
+Use `build.bat` (Windows) as a shortcut for common build tasks.
 
 ## Architecture
 
@@ -66,7 +67,7 @@ AppBar actions (all tabs):
 
 **Data layer:** All content hardcoded in `lib/data/umrah_data.dart` as a `const List<UmrahStep>`. No network calls; all assets bundled offline. Asset paths are string literals.
 
-**Auto-play groups:** `DoaViewerScreen` groups consecutive `DoaItem`s where `autoPlay: true` and auto-advances through them; items with `` act as manual break-points requiring user tap.
+**Auto-play groups:** `DoaViewerScreen` groups consecutive `DoaItem`s where `autoPlay: true` and auto-advances through them; items with `autoPlay: false` act as manual break-points requiring user tap.
 
 ## Key Files
 

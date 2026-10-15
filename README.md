@@ -327,7 +327,17 @@ Tap result → `DoaViewerScreen` at that doa.
 
 ## Getting Started
 
-**Requirements:** Flutter 3.x, Android device or emulator
+**Requirements:** Flutter 3.47+ (verified on 3.47.7), JDK 17, Android SDK (platform 36, build-tools 28.0.3, NDK 27.0.12077973), an Android device or emulator.
+
+**Build toolchain:** Gradle 8.14.3, Android Gradle Plugin 8.11.1, Kotlin 2.3.20. Flutter 3.27 is too old for this config. `android/gradle.properties` sets `kotlin.incremental=false` because Kotlin can't write its incremental cache on shared network-style drives (e.g. `P:`).
+
+**Files not in git (gitignored, you must supply them):**
+
+| File | Used for | If missing |
+|------|----------|------------|
+| `lib/firebase_options.dart` | Firebase init (`flutterfire configure`) | Build fails; a placeholder with dummy values works, Analytics is then disabled |
+| `android/app/google-services.json` | Firebase Gradle plugin (Firebase console, app `com.faeq.umrahmas`) | Build fails; a dummy file works |
+| `android/key.properties` + `android/app/upload-keystore.jks` | Release signing | Release build unsigned/fails; debug build is unaffected. The keystore cannot be regenerated, keep a backup |
 
 ```bash
 # Install dependencies
@@ -346,7 +356,7 @@ flutter build appbundle --release
 APK output: `build/app/outputs/flutter-apk/app-release.apk`
 AAB output: `build/app/outputs/bundle/release/app-release.aab`
 
-Convenience scripts are included: `setup_and_run.bat` and `build_apk.bat`.
+A Windows convenience script, `build.bat`, builds the debug or release APK.
 
 **Package name:** `com.faeq.umrahmas`
 
@@ -364,7 +374,7 @@ flutter build apk --release
 flutter build apk --debug
 ```
 
-Shortcut: run `build_apk.bat` from the project root — it builds the release APK automatically.
+Shortcut: run `build.bat` from the project root and pick debug or release.
 
 **Output path:**
 ```

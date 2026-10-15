@@ -34,6 +34,13 @@ flutter test test/widget_test.dart
 
 Use `build.bat` (Windows) as a shortcut for common build tasks.
 
+## Build Environment
+
+- Toolchain: Flutter 3.47+ (verified 3.47.7), JDK 17, Gradle 8.14.3, AGP 8.11.1, Kotlin 2.3.20, NDK 27.0.12077973. Older Flutter (e.g. 3.27) will not build this config.
+- `android/gradle.properties` sets `kotlin.incremental=false` (Kotlin can't write its cache on the `P:` shared drive). Don't remove it.
+- Gitignored files that must exist locally: `lib/firebase_options.dart`, `android/app/google-services.json` (placeholders work, Analytics off), and for release signing `android/key.properties` + `android/app/upload-keystore.jks`. Never commit them; the keystore is not regenerable.
+- Running Flutter newer than the project can make it rewrite `analysis_options.yaml`, `pubspec.lock` and `android/gradle.properties`; check `git status` and revert unintended changes.
+
 ## Architecture
 
 **Target:** Android only (Flutter). No web/iOS targets configured.

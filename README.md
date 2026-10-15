@@ -261,11 +261,11 @@ Tap result → `DoaViewerScreen` at that doa.
 - All bookmarks accessible via the **bookmark icon in the AppBar**, grouped by step
 - Persisted across app restarts
 
-### Tawaf & Sa'ie Round Tracking
-- 7-circle indicator in the AppBar when viewing Tawaf or Sa'ie rounds
-- Confirmation dialog when reaching the last doa in each round: "Adakah anda telah melengkapkan pusingan ini?"
-- Round status (confirmed / skipped / pending) persisted to device storage
-- Missed rounds highlighted with a reminder banner
+### Tawaf, Sa'ie & Tawaf Wida' Round Tracking
+- 7-circle indicator in the AppBar when viewing Tawaf, Sa'ie or Tawaf Wida' rounds during a journey
+- Confirmation dialog at the last doa of each round: "Adakah anda telah selesai ...?"
+- Round status comes from the journey checkpoints (white = done, orange = started)
+- Missed checkpoints highlighted with a reminder card
 
 ### Journey Recording & Checkpoint System
 - GPS track recorded in the background during your Umrah (every 5 m movement)
@@ -279,6 +279,13 @@ Tap result → `DoaViewerScreen` at that doa.
 - Next button disabled at checkpoint end until user confirms completion
 - **Missed checkpoint detection** — checkpoints never started are highlighted; "Rekod Semula" lets you re-record them
 - **"Selesai Ibadah Umrah"** button ends the journey and opens the summary screen
+
+### Tawaf Wida' Session
+- Tawaf Wida' is **not part of an Umrah journey** — several Umrahs may precede a single Wida'
+- Start it from the separate **"Tawaf Wida'"** card on the Umrah tab (or from the niat doa)
+- **7 checkpoints** (CP18–24), one per round, recorded like Tawaf; finishing round 7 ends the session
+- Saved to history as its own record ("Tawaf Wida' ke-N"); Umrah numbering ("Umrah ke-N") counts Umrah records only
+- Only one session (Umrah or Wida') can be active at a time
 
 ### Journey Summary & Export
 - Total distance (km) and duration
@@ -436,7 +443,7 @@ lib/
 │   ├── umrah_step.dart               # UmrahStep, UmrahSubStep, DoaItem
 │   ├── audio_provider.dart           # Global audio playback state + track-complete stream
 │   ├── bookmark_provider.dart        # Bookmark save/load (shared_preferences)
-│   ├── progress_provider.dart        # Guided-flow progress + Tawaf/Sa'ie round tracking
+│   ├── progress_provider.dart        # Auto-play toggle (rounds come from checkpoints)
 │   ├── location_provider.dart        # GPS tracking, zone detection, checkpoint recording
 │   ├── journey_models.dart           # JourneyPoint, CheckpointRecord data classes
 │   ├── journey_record.dart           # UmrahJourneyRecord with mutable date fields

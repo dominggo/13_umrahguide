@@ -21,6 +21,7 @@ class LocationProvider extends ChangeNotifier {
   bool _isOnline = false;
   bool _gpsAvailable = false;
   bool _isJourneyActive = false;
+  JourneyKind _kind = JourneyKind.umrah;
 
   StreamSubscription<Position>? _positionSub;
   StreamSubscription<List<ConnectivityResult>>? _connectSub;
@@ -45,6 +46,11 @@ class LocationProvider extends ChangeNotifier {
   bool get isOnline => _isOnline;
   bool get gpsAvailable => _gpsAvailable;
   bool get isJourneyActive => _isJourneyActive;
+
+  /// Kind of the current (or last loaded) session.
+  JourneyKind get journeyKind => _kind;
+  bool get isUmrahActive => _isJourneyActive && _kind == JourneyKind.umrah;
+  bool get isWidaActive => _isJourneyActive && _kind == JourneyKind.wida;
   List<JourneyPoint> get gpsTrack => List.unmodifiable(_gpsTrack);
   List<CheckpointRecord> get checkpoints => List.unmodifiable(_checkpoints);
   DateTime? get journeyStartTime => _journeyStartTime;
@@ -69,10 +75,10 @@ class LocationProvider extends ChangeNotifier {
   List<CheckpointRecord> get missedCheckpoints =>
       _checkpoints.where((c) => !c.isCompleted).toList();
 
-  /// Returns the lowest checkpoint number in 1..maxCp that hasn't been started yet.
-  /// Returns null if all checkpoints up to maxCp have been started.
-  int? nextUnstartedCheckpoint(int maxCp) {
-    for (int i = 1; i <= maxCp; i++) {
+  /// Returns the lowest checkpoint number of the current session's kind that
+  /// hasn't been started yet, or null if all of them have been started.
+  int? nextUnstartedCheckpoint() {
+    for (int i = _kind.firstCp; i <= _kind.lastCp; i++) {
       if (!_checkpoints.any((c) => c.checkpointNum == i)) return i;
     }
     return null;
@@ -113,6 +119,8 @@ class LocationProvider extends ChangeNotifier {
       if (map['start'] != null) {
         _journeyStartTime = DateTime.parse(map['start'] as String);
       }
+      // Files written before Tawaf Wida' sessions existed have no 'kind'.
+      _kind = JourneyKind.fromName(map['kind'] as String?);
     } catch (_) {}
   }
 
@@ -246,10 +254,16 @@ class LocationProvider extends ChangeNotifier {
 
   // ── Journey control ───────────────────────────────────────────────────────
 
-  /// Begin a new journey (or resume existing if track file present).
-  Future<void> startJourney() async {
+  /// Begin a new journey of [kind] (or resume existing if track file present).
+  /// Does nothing while another session (of any kind) is active.
+  Future<void> startJourney({JourneyKind kind = JourneyKind.umrah}) async {
     if (_isJourneyActive) return;
     await _loadPersistentTrack();
+    // Leftover data from a session of the other kind must not leak into this one.
+    if (_kind != kind && (_gpsTrack.isNotEmpty || _checkpoints.isNotEmpty)) {
+      _clearState();
+    }
+    _kind = kind;
     if (_gpsTrack.isEmpty && _checkpoints.isEmpty) {
       _journeyStartTime = DateTime.now();
     }
@@ -262,6 +276,8 @@ class LocationProvider extends ChangeNotifier {
 
   /// Called when user opens a doa with checkPointStart set.
   Future<void> recordCheckpointStart(int num, String name) async {
+    // Ignore checkpoints that belong to the other kind of session
+    if (!_kind.ownsCheckpoint(num)) return;
     // Don't duplicate if already started
     if (_checkpoints.any((c) => c.checkpointNum == num)) return;
     _checkpoints.add(CheckpointRecord(
@@ -277,6 +293,7 @@ class LocationProvider extends ChangeNotifier {
 
   /// Called when user taps "Ya" in checkpoint-end dialog.
   Future<void> recordCheckpointEnd(int num) async {
+    if (!_kind.ownsCheckpoint(num)) return;
     final idx = _checkpoints.indexWhere((c) => c.checkpointNum == num);
     if (idx < 0) return;
     _checkpoints[idx].endTime = DateTime.now();
@@ -292,6 +309,7 @@ class LocationProvider extends ChangeNotifier {
       final content = jsonEncode({
         'start': _journeyStartTime?.toIso8601String(),
         'active': _isJourneyActive,
+        'kind': _kind.name,
         'track': _gpsTrack.map((p) => p.toJson()).toList(),
         'checkpoints': _checkpoints.map((c) => c.toJson()).toList(),
       });
@@ -346,8 +364,8 @@ class LocationProvider extends ChangeNotifier {
       notes: notes,
       gpsTrack: List.from(_gpsTrack),
       completed: true,
-      version: 2,
       checkpoints: List.from(_checkpoints),
+      kind: _kind,
     );
 
     debugPrint('Record created:');
@@ -383,8 +401,8 @@ class LocationProvider extends ChangeNotifier {
       notes: notes,
       gpsTrack: List.from(_gpsTrack),
       completed: false,
-      version: 2,
       checkpoints: List.from(_checkpoints),
+      kind: _kind,
     );
     _clearState();
     final prefs = await SharedPreferences.getInstance();
@@ -398,6 +416,7 @@ class LocationProvider extends ChangeNotifier {
     _gpsTrack.clear();
     _checkpoints.clear();
     _journeyStartTime = null;
+    _kind = JourneyKind.umrah;
     _lastSavedPoint = null;
     _lastSavedTime = null;
     _stopAutosaveTimer();

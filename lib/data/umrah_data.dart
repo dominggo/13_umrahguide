@@ -943,7 +943,9 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Niat Tawaf Wida\'',
             imagePath: 'assets/images/doa/niat_tawaf_wada.png',
-            audioPath: 'assets/audio/niat_tawaf_wida.ogg'),
+            audioPath: 'assets/audio/niat_tawaf_wida.ogg',
+            checkPointStart: 18,
+            checkPointName: 'Niat Tawaf Wida\' & Pusingan Pertama'),
       ]),
       // Pusingan 1: doa_ketika_tawaf_wada 1–4
       UmrahSubStep(id: 'tawaf_wida_1', title: 'Tawaf Pusingan Pertama', duas: [
@@ -970,14 +972,17 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 18,
+            nextLabel: 'Tawaf Pusingan Kedua'),
       ]),
       // Pusingan 2: doa_ketika_tawaf_wada 5–8
       UmrahSubStep(id: 'tawaf_wida_2', title: 'Tawaf Pusingan Kedua', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+            checkPointStart: 19),
         DoaItem(
             title: 'Doa Tawaf Wida\' 5',
             imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_5.png',
@@ -997,14 +1002,17 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 19,
+            nextLabel: 'Tawaf Pusingan Ketiga'),
       ]),
       // Pusingan 3: doa_ketika_tawaf_wada 9–12
       UmrahSubStep(id: 'tawaf_wida_3', title: 'Tawaf Pusingan Ketiga', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+            checkPointStart: 20),
         DoaItem(
             title: 'Doa Tawaf Wida\' 9',
             imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_9.png',
@@ -1024,14 +1032,17 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 20,
+            nextLabel: 'Tawaf Pusingan Keempat'),
       ]),
       // Pusingan 4: doa_ketika_tawaf_wada 13–16
       UmrahSubStep(id: 'tawaf_wida_4', title: 'Tawaf Pusingan Keempat', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+            checkPointStart: 21),
         DoaItem(
             title: 'Doa Tawaf Wida\' 13',
             imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_13.png',
@@ -1051,14 +1062,17 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 21,
+            nextLabel: 'Tawaf Pusingan Kelima'),
       ]),
       // Pusingan 5: doa_ketika_tawaf_wada 17–20
       UmrahSubStep(id: 'tawaf_wida_5', title: 'Tawaf Pusingan Kelima', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+            checkPointStart: 22),
         DoaItem(
             title: 'Doa Tawaf Wida\' 17',
             imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_17.png',
@@ -1078,14 +1092,17 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 22,
+            nextLabel: 'Tawaf Pusingan Keenam'),
       ]),
       // Pusingan 6: doa_ketika_tawaf_wada 21–24
       UmrahSubStep(id: 'tawaf_wida_6', title: 'Tawaf Pusingan Keenam', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+            checkPointStart: 23),
         DoaItem(
             title: 'Doa Tawaf Wida\' 21',
             imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_21.png',
@@ -1105,14 +1122,17 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 23,
+            nextLabel: 'Tawaf Pusingan Ketujuh'),
       ]),
       // Pusingan 7: doa_ketika_tawaf_wada 25–27
       UmrahSubStep(id: 'tawaf_wida_7', title: 'Tawaf Pusingan Ketujuh', duas: [
         DoaItem(
             title: 'Zikir Melambai Ka\'abah',
             imagePath: 'assets/images/doa/zikir_melambai_kaabah.png',
-            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg'),
+            audioPath: 'assets/audio/zikir_melambai_kaabah.ogg',
+            checkPointStart: 24),
         DoaItem(
             title: 'Doa Tawaf Wida\' 25',
             imagePath: 'assets/images/doa/doa_ketika_tawaf_wada_25.png',
@@ -1128,7 +1148,9 @@ final List<UmrahStep> umrahSteps = [
         DoaItem(
             title: 'Doa Antara Dua Rukun',
             imagePath: 'assets/images/doa/doa_antara_dua_rukun.png',
-            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg'),
+            audioPath: 'assets/audio/doa_antara_dua_rukun.ogg',
+            checkPointEnd: 24,
+            nextLabel: 'Selesai Tawaf Wida\''),
       ]),
       // Tamat Tawaf Wida' — Solat Sunat Tawaf
       UmrahSubStep(

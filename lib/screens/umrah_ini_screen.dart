@@ -20,7 +20,8 @@ class UmrahIniScreen extends StatelessWidget {
     final loc = context.watch<LocationProvider>();
     final prog = context.watch<ProgressProvider>();
     final currentZone = loc.currentZone;
-    final isActive = loc.isJourneyActive;
+    final isActive = loc.isUmrahActive;
+    final isWidaActive = loc.isWidaActive;
 
     // Journey steps: ihram, tawaf, solat_tawaf, saie, tahallul
     const journeyStepIds = {
@@ -33,7 +34,7 @@ class UmrahIniScreen extends StatelessWidget {
     final journeySteps =
         umrahSteps.where((s) => journeyStepIds.contains(s.id)).toList();
 
-    final missedCps = loc.missedCheckpoints;
+    final missedCps = isActive ? loc.missedCheckpoints : <CheckpointRecord>[];
     final hasMissed = missedCps.isNotEmpty;
 
     return Column(
@@ -56,16 +57,27 @@ class UmrahIniScreen extends StatelessWidget {
                 minimumSize: const Size.fromHeight(48),
                 backgroundColor: const Color(0xFF1B5E20),
               ),
-              onPressed: () async {
-                if (!loc.gpsAvailable) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text(
-                        'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                  ));
-                }
-                await loc.startJourney();
-                AnalyticsService.logJourneyStarted();
-              },
+              onPressed: isWidaActive
+                  ? null
+                  : () async {
+                      if (!loc.gpsAvailable) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(const SnackBar(
+                          content: Text(
+                              'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                        ));
+                      }
+                      await loc.startJourney();
+                      AnalyticsService.logJourneyStarted();
+                    },
+            ),
+          ),
+        if (!isActive && isWidaActive)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Text(
+              "Tamatkan Tawaf Wida' dahulu sebelum memulakan Umrah.",
+              style: TextStyle(fontSize: 12, color: Colors.orange),
             ),
           ),
 
@@ -88,7 +100,7 @@ class UmrahIniScreen extends StatelessWidget {
                     ),
                     title: Text(
                       (loc.lastIncompleteCheckpoint != null ||
-                              loc.nextUnstartedCheckpoint(17) != null)
+                              loc.nextUnstartedCheckpoint() != null)
                           ? 'Sambung Umrah'
                           : 'Selesai',
                       style: const TextStyle(
@@ -165,6 +177,9 @@ class UmrahIniScreen extends StatelessWidget {
                   ),
                 );
               }),
+
+              // Tawaf Wida' — independent of any Umrah journey
+              _buildWidaCard(context, loc, prog),
             ],
           ),
         ),
@@ -204,7 +219,7 @@ class UmrahIniScreen extends StatelessWidget {
   String _nextCheckpointSubtitle(LocationProvider loc) {
     final incomplete = loc.lastIncompleteCheckpoint;
     if (incomplete != null) return incomplete.name;
-    final nextNum = loc.nextUnstartedCheckpoint(17);
+    final nextNum = loc.nextUnstartedCheckpoint();
     if (nextNum == null) return 'Semua selesai';
     for (final step in umrahSteps) {
       for (final sub in step.subSteps) {
@@ -227,23 +242,25 @@ class UmrahIniScreen extends StatelessWidget {
     }
 
     // No incomplete checkpoint — find the next unstarted one
-    final nextNum = loc.nextUnstartedCheckpoint(17);
+    final nextNum = loc.nextUnstartedCheckpoint();
     if (nextNum != null) {
       _openCheckpointDoa(context, nextNum);
       return;
     }
 
-    // All 17 checkpoints completed — open ihram as fallback
-    final ihram = umrahSteps.firstWhere((s) => s.id == 'ihram');
+    // All checkpoints completed — open the first step of this kind as fallback
+    final fallbackId =
+        loc.journeyKind == JourneyKind.wida ? 'tawaf_wida' : 'ihram';
+    final fallback = umrahSteps.firstWhere((s) => s.id == fallbackId);
     Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => DoaViewerScreen(
             duas: const [],
             initialIndex: 0,
-            title: ihram.title,
-            stepId: ihram.id,
-            fullStep: ihram,
+            title: fallback.title,
+            stepId: fallback.id,
+            fullStep: fallback,
             fromJourney: true,
           ),
         ));
@@ -284,12 +301,14 @@ class UmrahIniScreen extends StatelessWidget {
   Future<void> _endJourney(
       BuildContext context, LocationProvider loc, ProgressProvider prog) async {
     final history = context.read<JourneyHistoryProvider>();
+    final isWida = loc.journeyKind == JourneyKind.wida;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Tamatkan Perjalanan?'),
-        content: const Text(
-            'Adakah anda pasti ingin menamatkan perjalanan umrah ini?'),
+        content: Text(isWida
+            ? "Adakah anda pasti ingin menamatkan Tawaf Wida' ini?"
+            : 'Adakah anda pasti ingin menamatkan perjalanan umrah ini?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -306,7 +325,8 @@ class UmrahIniScreen extends StatelessWidget {
     final record = await loc.finalizeJourney();
     await history.addOrUpdateJourney(record);
     AnalyticsService.logJourneyCompleted(
-        checkpointsCompleted: record.checkpoints.where((c) => c.isCompleted).length);
+        checkpointsCompleted: record.checkpoints.where((c) => c.isCompleted).length,
+        kind: record.kind);
     if (context.mounted) await prog.clearProgress();
 
     if (context.mounted) {
@@ -319,10 +339,134 @@ class UmrahIniScreen extends StatelessWidget {
             gpsTrack: record.gpsTrack,
             checkpoints: record.checkpoints,
             journeyId: record.id,
+            kind: record.kind,
           ),
         ),
       );
     }
+  }
+
+  /// Card for the standalone Tawaf Wida' session. Wida' is not part of an Umrah
+  /// journey: several Umrahs may precede a single Wida'.
+  Widget _buildWidaCard(
+      BuildContext context, LocationProvider loc, ProgressProvider prog) {
+    final widaStep = umrahSteps.firstWhere((s) => s.id == 'tawaf_wida');
+    final isWidaActive = loc.isWidaActive;
+    final umrahBusy = loc.isUmrahActive;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            "Tawaf Wida'",
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF1B5E20),
+                    child: Icon(Icons.waving_hand, color: Colors.white, size: 18),
+                  ),
+                  title: Text(widaStep.title,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: isWidaActive
+                      ? _WidaDots(locationProvider: loc)
+                      : Text(
+                          '${widaStep.subtitle} — berasingan daripada Umrah',
+                          style: const TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () => _openStep(context, widaStep),
+                ),
+                if (isWidaActive) ...[
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.play_circle_outline,
+                        color: Color(0xFF1B5E20)),
+                    title: Text(
+                      (loc.lastIncompleteCheckpoint != null ||
+                              loc.nextUnstartedCheckpoint() != null)
+                          ? "Sambung Tawaf Wida'"
+                          : 'Selesai',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    subtitle: Text(_nextCheckpointSubtitle(loc),
+                        style: const TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () => _openLastCheckpoint(context, loc),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.stop_circle_outlined,
+                          color: Colors.red),
+                      label: const Text("Selesai Tawaf Wida'",
+                          style: TextStyle(color: Colors.red)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red),
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                      onPressed: () => _endJourney(context, loc, prog),
+                    ),
+                  ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FilledButton.icon(
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text("Mulakan Tawaf Wida'"),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            backgroundColor: const Color(0xFF1B5E20),
+                          ),
+                          onPressed: umrahBusy
+                              ? null
+                              : () async {
+                                  if (!loc.gpsAvailable) {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text(
+                                          'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
+                                    ));
+                                  }
+                                  await loc.startJourney(kind: JourneyKind.wida);
+                                  AnalyticsService.logJourneyStarted(
+                                      kind: JourneyKind.wida);
+                                  if (context.mounted) {
+                                    _openCheckpointDoa(
+                                        context, JourneyKind.wida.firstCp);
+                                  }
+                                },
+                        ),
+                        if (umrahBusy)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 6),
+                            child: Text(
+                              "Tamatkan Umrah dahulu sebelum memulakan Tawaf Wida'.",
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.orange),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void _showManualZoneDialog(BuildContext context, LocationProvider locProv) {
@@ -446,6 +590,35 @@ class _CheckpointDots extends StatelessWidget {
           child: CircleAvatar(backgroundColor: color, radius: 5),
         );
       }).toList(),
+    );
+  }
+}
+
+/// Dots for the 7 rounds of a Tawaf Wida' session (CP18–24).
+class _WidaDots extends StatelessWidget {
+  final LocationProvider locationProvider;
+
+  const _WidaDots({required this.locationProvider});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (int cp = JourneyKind.wida.firstCp;
+            cp <= JourneyKind.wida.lastCp;
+            cp++)
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: CircleAvatar(
+              backgroundColor: locationProvider.isCheckpointCompleted(cp)
+                  ? const Color(0xFF1B5E20)
+                  : locationProvider.isCheckpointStarted(cp)
+                      ? Colors.orange
+                      : Colors.grey[300]!,
+              radius: 5,
+            ),
+          ),
+      ],
     );
   }
 }

@@ -8,6 +8,7 @@ import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
 import '../models/progress_provider.dart';
 import '../models/location_provider.dart';
+import '../models/journey_models.dart';
 import '../models/journey_history_provider.dart';
 import '../services/analytics_service.dart';
 import 'umrah_tamat_screen.dart';
@@ -112,7 +113,10 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final subId = _currentSubstepId;
     if (subId == null) return null;
 
-    if (subId.startsWith('tawaf_') && !subId.startsWith('tawaf_wida_')) {
+    if (subId.startsWith('tawaf_wida_')) {
+      final n = int.tryParse(subId.split('_').last);
+      if (n != null && n >= 1 && n <= 7) return 'tawaf_wida';
+    } else if (subId.startsWith('tawaf_')) {
       final n = int.tryParse(subId.split('_').last);
       if (n != null && n >= 1 && n <= 7) return 'tawaf';
     }
@@ -175,7 +179,10 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   bool get _showCheckpointEndButton {
     if (!widget.fromJourney) return false;
     if (_duas.isEmpty) return false;
-    return _currentDoa.checkPointEnd != null;
+    final endNum = _currentDoa.checkPointEnd;
+    if (endNum == null) return false;
+    // Only checkpoints of the active session's kind can be ended here
+    return context.read<LocationProvider>().journeyKind.ownsCheckpoint(endNum);
   }
 
   /// Tapping the checkpoint-end button: show confirmation dialog, then record end
@@ -186,10 +193,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final loc = context.read<LocationProvider>();
     if (!loc.isJourneyActive) return;
 
-    final nextLabel = doa.nextLabel ?? '';
-    final isFinish = nextLabel == 'Selesai Umrah';
-
-    if (isFinish) {
+    if (endNum == loc.journeyKind.lastCp) {
       await loc.recordCheckpointEnd(endNum);
       if (!mounted) return;
       await _confirmFinalizeJourney(context, loc);
@@ -264,12 +268,14 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
       BuildContext ctx, LocationProvider loc) async {
     final history = ctx.read<JourneyHistoryProvider>();
     final prog = ctx.read<ProgressProvider>();
+    final kindLabel =
+        loc.journeyKind == JourneyKind.wida ? "Tawaf Wida'" : 'Umrah';
 
     final confirm = await showDialog<bool>(
       context: ctx,
       builder: (_) => AlertDialog(
-        title: const Text('Tamatkan Umrah?'),
-        content: const Text('Tamatkan Umrah? Rekod lengkap akan disimpan.'),
+        title: Text('Tamatkan $kindLabel?'),
+        content: Text('Tamatkan $kindLabel? Rekod lengkap akan disimpan.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -316,6 +322,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
             gpsTrack: record.gpsTrack,
             checkpoints: record.checkpoints,
             journeyId: record.id,
+            kind: record.kind,
           ),
         ),
       );
@@ -325,7 +332,6 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final total = _duas.length;
-    final prog = context.watch<ProgressProvider>();
     final bm = context.watch<BookmarkProvider>();
     final loc = context.watch<LocationProvider>();
 
@@ -363,8 +369,6 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: _RoundStatusIndicator(
                 prefix: _derivedRoundPrefix!,
-                total: 7,
-                progressProvider: prog,
                 locationProvider: loc,
               ),
             ),
@@ -459,8 +463,13 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                         builder: (ctx, loc, _) {
                           final showCpEnd =
                               _showCheckpointEndButton && loc.isJourneyActive;
-                          final showStart = currentDoa.checkPointStart == 1 &&
-                              !loc.isJourneyActive;
+                          final startKind = switch (currentDoa.checkPointStart) {
+                            1 => JourneyKind.umrah,
+                            18 => JourneyKind.wida,
+                            _ => null,
+                          };
+                          final showStart =
+                              startKind != null && !loc.isJourneyActive;
 
                           if (!showCpEnd && !showStart) {
                             return const SizedBox.shrink();
@@ -476,8 +485,12 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                                     child: FilledButton.icon(
                                       icon: const Icon(Icons.play_arrow,
                                           size: 16),
-                                      label: const Text('Mulakan Umrah',
-                                          style: TextStyle(fontSize: 12)),
+                                      label: Text(
+                                          startKind == JourneyKind.wida
+                                              ? "Mulakan Tawaf Wida'"
+                                              : 'Mulakan Umrah',
+                                          style:
+                                              const TextStyle(fontSize: 12)),
                                       style: FilledButton.styleFrom(
                                         backgroundColor:
                                             const Color(0xFF1B5E20),
@@ -491,7 +504,9 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                                                 'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
                                           ));
                                         }
-                                        await loc.startJourney();
+                                        await loc.startJourney(kind: startKind);
+                                        AnalyticsService.logJourneyStarted(
+                                            kind: startKind);
                                         if (mounted) {
                                           _maybeRecordCheckpointStart(
                                               _currentIndex);
@@ -519,12 +534,15 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
   Widget _buildCheckpointEndButton(DoaItem doa) {
     final nextLabel = doa.nextLabel ?? '';
-    final isFinish = nextLabel == 'Selesai Umrah';
+    final kind = context.read<LocationProvider>().journeyKind;
+    final isFinish = doa.checkPointEnd == kind.lastCp;
 
     if (isFinish) {
       return FilledButton.icon(
         icon: const Icon(Icons.check_circle_outline, size: 16),
-        label: const Text('Tamatkan Umrah', style: TextStyle(fontSize: 12)),
+        label: Text(
+            kind == JourneyKind.wida ? "Tamatkan Tawaf Wida'" : 'Tamatkan Umrah',
+            style: const TextStyle(fontSize: 12)),
         style: FilledButton.styleFrom(
           backgroundColor: Colors.green[700],
           visualDensity: VisualDensity.compact,
@@ -742,75 +760,62 @@ class _NavBar extends StatelessWidget {
   }
 }
 
-/// Shows 7 colored circles indicating round completion status for Tawaf/Sa'ie.
+/// Shows 7 circles indicating round completion status for Tawaf, Sa'ie and
+/// Tawaf Wida'. Status comes from the journey checkpoints of each round.
 class _RoundStatusIndicator extends StatelessWidget {
   final String prefix;
-  final int total;
-  final ProgressProvider progressProvider;
   final LocationProvider locationProvider;
 
-  // Checkpoint numbers for tawaf rounds 1–7 (CP2–CP8)
+  // Checkpoint numbers for rounds 1–7 of each activity
   static const _tawafCPs = [2, 3, 4, 5, 6, 7, 8];
-  // Checkpoint numbers for saie rounds 1–7 (CP10–CP16)
   static const _saieCPs = [10, 11, 12, 13, 14, 15, 16];
+  static const _widaCPs = [18, 19, 20, 21, 22, 23, 24];
 
   const _RoundStatusIndicator({
     required this.prefix,
-    required this.total,
-    required this.progressProvider,
     required this.locationProvider,
   });
 
+  List<int> get _cps => switch (prefix) {
+        'tawaf' => _tawafCPs,
+        'tawaf_wida' => _widaCPs,
+        _ => _saieCPs,
+      };
+
+  String get _label => switch (prefix) {
+        'tawaf' => 'Tawaf',
+        'tawaf_wida' => "Tawaf Wida'",
+        _ => "Sa'ie",
+      };
+
   @override
   Widget build(BuildContext context) {
+    final cps = _cps;
     return GestureDetector(
       onTap: () {
-        int done;
-        if (prefix == 'tawaf') {
-          done = _tawafCPs.where((n) => locationProvider.isCheckpointCompleted(n)).length;
-        } else if (prefix == 'saie') {
-          done = _saieCPs.where((n) => locationProvider.isCheckpointCompleted(n)).length;
-        } else {
-          done = progressProvider.getConfirmedCount(prefix);
-        }
+        final done =
+            cps.where((n) => locationProvider.isCheckpointCompleted(n)).length;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              '${prefix == 'tawaf' ? 'Tawaf' : prefix == 'tawaf_wida' ? "Tawaf Wida'" : "Sa'ie"}: $done/$total selesai'),
+          content: Text('$_label: $done/${cps.length} selesai'),
           duration: const Duration(seconds: 2),
         ));
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(total, (i) {
-          Color color;
-          if (prefix == 'tawaf') {
-            final cp = _tawafCPs[i];
-            color = locationProvider.isCheckpointCompleted(cp)
-                ? Colors.white
-                : locationProvider.isCheckpointStarted(cp)
-                    ? Colors.orange
-                    : Colors.white30;
-          } else if (prefix == 'saie') {
-            final cp = _saieCPs[i];
-            color = locationProvider.isCheckpointCompleted(cp)
-                ? Colors.white
-                : locationProvider.isCheckpointStarted(cp)
-                    ? Colors.orange
-                    : Colors.white30;
-          } else {
-            // tawaf_wida — no checkpoints, fall back to ProgressProvider
-            final status = progressProvider.getRoundStatus('${prefix}_${i + 1}');
-            color = status == RoundStatus.confirmed
-                ? Colors.white
-                : status == RoundStatus.skipped
-                    ? Colors.orange
-                    : Colors.white30;
-          }
-          return Padding(
-            padding: const EdgeInsets.only(right: 3),
-            child: CircleAvatar(backgroundColor: color, radius: 4),
-          );
-        }),
+        children: [
+          for (final cp in cps)
+            Padding(
+              padding: const EdgeInsets.only(right: 3),
+              child: CircleAvatar(
+                backgroundColor: locationProvider.isCheckpointCompleted(cp)
+                    ? Colors.white
+                    : locationProvider.isCheckpointStarted(cp)
+                        ? Colors.orange
+                        : Colors.white30,
+                radius: 4,
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -11,6 +11,9 @@ class UmrahJourneyRecord {
   int version;
   List<CheckpointRecord> checkpoints;
 
+  /// Umrah journey or standalone Tawaf Wida' session (v3+; older records are Umrah).
+  final JourneyKind kind;
+
   UmrahJourneyRecord({
     required this.id,
     required this.startTime,
@@ -18,8 +21,9 @@ class UmrahJourneyRecord {
     this.notes,
     required this.gpsTrack,
     this.completed = true,
-    this.version = 2,
+    this.version = 3,
     this.checkpoints = const [],
+    this.kind = JourneyKind.umrah,
   });
 
   Duration get totalDuration => endTime.difference(startTime);
@@ -85,6 +89,7 @@ class UmrahJourneyRecord {
                   .toList() ??
               []
           : [],
+      kind: JourneyKind.fromName(json['kind'] as String?),
     );
   }
 
@@ -97,5 +102,6 @@ class UmrahJourneyRecord {
         'completed': completed,
         'version': version,
         'checkpoints': checkpoints.map((c) => c.toJson()).toList(),
+        'kind': kind.name,
       };
 }

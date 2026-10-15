@@ -22,6 +22,7 @@ class UmrahTamatScreen extends StatefulWidget {
   final List<JourneyPoint> gpsTrack;
   final List<CheckpointRecord> checkpoints;
   final String? journeyId; // non-null when viewing from history
+  final JourneyKind kind;
 
   const UmrahTamatScreen({
     super.key,
@@ -30,6 +31,7 @@ class UmrahTamatScreen extends StatefulWidget {
     required this.gpsTrack,
     required this.checkpoints,
     this.journeyId,
+    this.kind = JourneyKind.umrah,
   });
 
   @override
@@ -211,9 +213,14 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
 
   // ── Timeline builder ──────────────────────────────────────────────────────
 
-  bool _isUmrahComplete(List<CheckpointRecord> cps) {
+  bool get _isWida => widget.kind == JourneyKind.wida;
+
+  /// Short name of this kind of session, for titles and share text.
+  String get _kindLabel => _isWida ? "Tawaf Wida'" : 'Umrah';
+
+  bool _isComplete(List<CheckpointRecord> cps) {
     final cpMap = {for (final c in cps) c.checkpointNum: c};
-    for (int i = 1; i <= 17; i++) {
+    for (int i = widget.kind.firstCp; i <= widget.kind.lastCp; i++) {
       if (cpMap[i]?.isCompleted != true) return false;
     }
     return true;
@@ -232,6 +239,19 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
         );
       }
       return _SkippedCheckpointTile(cpNum: num, name: _checkpointNameFor(num));
+    }
+
+    if (_isWida) {
+      // CP18–24: Tawaf Wida' (7 rounds)
+      return [
+        _CheckpointGroupTile(
+          label: "Tawaf Wida' (7 pusingan)",
+          cpNums: const [18, 19, 20, 21, 22, 23, 24],
+          cpMap: cpMap,
+          checkpointNameFor: _checkpointNameFor,
+          onEdit: canEdit ? _editCheckpoint : null,
+        ),
+      ];
     }
 
     return [
@@ -267,24 +287,24 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
   // ── Footer builder ────────────────────────────────────────────────────────
 
   Widget _buildFooter(List<CheckpointRecord> cps) {
-    if (_isUmrahComplete(cps)) {
+    if (_isComplete(cps)) {
       return Container(
         padding: const EdgeInsets.all(24),
         color: const Color(0xFF1B5E20),
-        child: const Center(
+        child: Center(
           child: Column(
             children: [
-              Icon(Icons.mosque, color: Colors.white, size: 36),
-              SizedBox(height: 8),
+              const Icon(Icons.mosque, color: Colors.white, size: 36),
+              const SizedBox(height: 8),
               Text(
-                'Alhamdulillah — Umrah Selesai',
-                style: TextStyle(
+                'Alhamdulillah — $_kindLabel Selesai',
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 4),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 'Semoga diterima Allah s.w.t.',
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
@@ -296,21 +316,23 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       color: Colors.amber[700],
-      child: const Center(
+      child: Center(
         child: Column(
           children: [
-            Icon(Icons.warning_amber, color: Colors.white, size: 36),
-            SizedBox(height: 8),
+            const Icon(Icons.warning_amber, color: Colors.white, size: 36),
+            const SizedBox(height: 8),
             Text(
-              'Semak dan pastikan Umrah ini lengkap',
-              style: TextStyle(
+              _isWida
+                  ? "Semak dan pastikan Tawaf Wida' ini lengkap"
+                  : 'Semak dan pastikan Umrah ini lengkap',
+              style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 4),
-            Text(
+            const SizedBox(height: 4),
+            const Text(
               'Terdapat checkpoint yang belum selesai',
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
@@ -323,7 +345,12 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
   @override
   Widget build(BuildContext context) {
     final history = context.watch<JourneyHistoryProvider>();
-    final umrahNum = history.totalUmrahCount;
+    // Number of this record among journeys of its kind (not the latest count)
+    final recordNum =
+        widget.journeyId != null ? history.ordinalOf(widget.journeyId!) : 0;
+    final ordinal = recordNum > 0
+        ? recordNum
+        : (_isWida ? history.totalWidaCount : history.totalUmrahCount);
     final hasGps = widget.gpsTrack.length > 1;
 
     // Use live checkpoints from provider when journeyId is available
@@ -353,7 +380,8 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
           children: [
             // Summary card header
             _SummaryHeader(
-              umrahNum: umrahNum,
+              kind: widget.kind,
+              ordinal: ordinal,
               startTime: widget.startTime,
               endTime: widget.endTime,
               duration: _duration,
@@ -432,7 +460,7 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
       final file = File('${dir.path}/umrah_summary.png');
       await file.writeAsBytes(bytes);
       await Share.shareXFiles(
-          [XFile(file.path)], text: 'Ringkasan Perjalanan Umrah saya');
+          [XFile(file.path)], text: 'Ringkasan Perjalanan $_kindLabel saya');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -510,7 +538,7 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
                   )),
               pw.SizedBox(height: 30),
               pw.Center(
-                child: pw.Text('Alhamdulillah — Umrah Selesai',
+                child: pw.Text('Alhamdulillah — $_kindLabel Selesai',
                     style: pw.TextStyle(
                         font: boldFont,
                         fontSize: 16,
@@ -526,7 +554,7 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
       final file = File('${dir.path}/umrah_summary.pdf');
       await file.writeAsBytes(bytes);
       await Share.shareXFiles([XFile(file.path)],
-          text: 'Ringkasan PDF Perjalanan Umrah');
+          text: 'Ringkasan PDF Perjalanan $_kindLabel');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -542,14 +570,16 @@ class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
 // ─── Summary Header ───────────────────────────────────────────────────────────
 
 class _SummaryHeader extends StatelessWidget {
-  final int umrahNum;
+  final JourneyKind kind;
+  final int ordinal;
   final DateTime startTime;
   final DateTime endTime;
   final Duration duration;
   final double distanceKm;
 
   const _SummaryHeader({
-    required this.umrahNum,
+    required this.kind,
+    required this.ordinal,
     required this.startTime,
     required this.endTime,
     required this.duration,
@@ -571,7 +601,9 @@ class _SummaryHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Umrah ke-$umrahNum',
+            kind == JourneyKind.wida
+                ? "Tawaf Wida' ke-$ordinal"
+                : 'Umrah ke-$ordinal',
             style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 4),

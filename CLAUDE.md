@@ -48,8 +48,8 @@ Use `build.bat` (Windows) as a shortcut for common build tasks.
 **State Management:** `MultiProvider` at root (`main.dart`) with 5 providers:
 - `AudioProvider` — wraps `just_audio`; single global audio player. `play(assetPath)` toggles; navigating away calls `stop()`. Emits a track-complete stream used by `DoaViewerScreen` for auto-advance.
 - `BookmarkProvider` — bookmark CRUD via `shared_preferences`; key format `{stepId}__{substepId}__{doaTitle}`.
-- `ProgressProvider` — guided-flow cursor (step/substep indices) + Tawaf/Sa'ie round status (`RoundStatus` enum: pending/confirmed/skipped). Both persisted.
-- `LocationProvider` — GPS subscription, zone auto-detection against 7 hardcoded Masjidil Haram coordinates, manual zone override, journey point/event recording.
+- `ProgressProvider` — only holds the persisted auto-play toggle (`autoPlayEnabled`); `clearProgress()` is a no-op kept for call sites. Round progress is NOT stored here — it comes from journey checkpoints in `LocationProvider`.
+- `LocationProvider` — GPS subscription, zone auto-detection against 7 hardcoded Masjidil Haram coordinates, manual zone override, journey GPS/checkpoint recording. One session at a time, of a `JourneyKind`: `umrah` (CP1–17) or `wida` (CP18–24, standalone Tawaf Wida'). Checkpoints outside the active kind's range are ignored, so a Tawaf doa opened during a Wida' session can't write into it.
 - `JourneyHistoryProvider` — CRUD for completed journeys; persisted as JSON at `{appDocDir}/umrah_history.json`.
 
 **Navigation flow:**
@@ -58,8 +58,9 @@ SplashScreen (3 s auto-nav)
   └── HomeScreen (NavigationBar, 4 tabs)
         ├── Tab 0: Menu — grid of 9 UmrahStep cards
         │     └── StepDetailScreen → DoaListScreen (doa thumbnails)
-        │           └── DoaViewerScreen (PageView + audio + tawaf/saie round tracking)
-        ├── Tab 1: Umrah — UmrahIniScreen (checkpoint-based journey; GPS tracking)
+        │           └── DoaViewerScreen (PageView + audio + round indicator + checkpoint buttons)
+        ├── Tab 1: Umrah — UmrahIniScreen (checkpoint-based journey; GPS tracking;
+        │     separate "Tawaf Wida'" card = independent Wida' session, CP18–24)
         │     ├── StepDetailScreen (fromJourney: true) → DoaViewerScreen (flat navigation)
         │     └── End journey → UmrahTamatScreen (map + timeline + PNG/PDF export)
         ├── Tab 2: Sejarah — UmrahAllScreen (list of completed journeys)
@@ -83,11 +84,11 @@ AppBar actions (all tabs):
 | `lib/data/umrah_data.dart` | All 9 Umrah steps with substeps & duas — edit content here |
 | `lib/models/umrah_step.dart` | `UmrahStep`, `UmrahSubStep`, `DoaItem` data classes |
 | `lib/models/audio_provider.dart` | Global audio state + track-complete stream |
-| `lib/models/progress_provider.dart` | Guided-flow cursor + `RoundStatus` tracking |
-| `lib/models/location_provider.dart` | GPS, zone detection, journey recording |
+| `lib/models/progress_provider.dart` | Auto-play toggle only |
+| `lib/models/location_provider.dart` | GPS, zone detection, journey recording (`JourneyKind` umrah/wida) |
 | `lib/models/journey_history_provider.dart` | Journey CRUD + JSON file persistence |
 | `lib/models/umrah_location.dart` | `UmrahLocation` model + 7 Masjidil Haram zone coordinates |
-| `lib/screens/doa_viewer_screen.dart` | Full-screen doa PageView, auto-play logic, round dialogs |
+| `lib/screens/doa_viewer_screen.dart` | Full-screen doa PageView, auto-play logic, checkpoint start/end buttons, 7-dot round indicator (Tawaf/Sa'ie/Wida') |
 | `lib/screens/doa_list_screen.dart` | Doa thumbnails with quick play + bookmark toggle (`DoaListScreen`) |
 | `lib/screens/umrah_ini_screen.dart` | Tab 1 — checkpoint-based Umrah journey; GPS zone display; 5-step tiles; start/end flow (`UmrahIniScreen`) |
 | `lib/screens/umrah_all_screen.dart` | Tab 2 — list of completed journey records; opens UmrahTamatScreen (`UmrahAllScreen`) |

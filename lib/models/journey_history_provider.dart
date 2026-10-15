@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'journey_models.dart';
 import 'journey_record.dart';
 
 class JourneyHistoryProvider extends ChangeNotifier {
@@ -14,7 +15,23 @@ class JourneyHistoryProvider extends ChangeNotifier {
     return List.unmodifiable(sorted);
   }
 
-  int get totalUmrahCount => _journeys.length;
+  int get totalUmrahCount =>
+      _journeys.where((j) => j.kind == JourneyKind.umrah).length;
+  int get totalWidaCount =>
+      _journeys.where((j) => j.kind == JourneyKind.wida).length;
+
+  /// 1-based chronological number of journey [id] among records of its kind
+  /// (e.g. "Umrah ke-3"); 0 if not found.
+  int ordinalOf(String id) {
+    final idx = _journeys.indexWhere((j) => j.id == id);
+    if (idx < 0) return 0;
+    final kind = _journeys[idx].kind;
+    final start = _journeys[idx].startTime;
+    return _journeys
+            .where((j) => j.kind == kind && j.startTime.isBefore(start))
+            .length +
+        1;
+  }
   String? get errorMsg => _errorMsg;
 
   JourneyHistoryProvider() {

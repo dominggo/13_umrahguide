@@ -1,5 +1,11 @@
 # Journey Tracking — Architecture & Reference
 
+> **Status note (2026-10):** the checkpoint-based model (CP1–17 Umrah, CP18–24 standalone
+> Tawaf Wida' session, `JourneyKind`) replaced the event/round-confirmation design described in
+> this document. `ProgressProvider.confirmRound()`, `_handleCheckpointForCurrentDoa()` and the
+> `journey_track.json` buffer no longer exist; see `CLAUDE.md` and `lib/models/location_provider.dart`
+> for the current behaviour. Kept for history.
+
 ## 1. Overview
 
 The Panduan Umrah app records the user's physical Umrah journey as a structured timeline.

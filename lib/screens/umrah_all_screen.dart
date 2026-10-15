@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/journey_history_provider.dart';
+import '../models/journey_models.dart';
 import '../models/journey_record.dart';
 import 'umrah_tamat_screen.dart';
 
@@ -30,7 +31,9 @@ class UmrahAllScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sejarah Umrah — ${history.totalUmrahCount} kali selesai'),
+        title: Text(history.totalWidaCount > 0
+            ? "Sejarah — ${history.totalUmrahCount} Umrah, ${history.totalWidaCount} Tawaf Wida'"
+            : 'Sejarah Umrah — ${history.totalUmrahCount} kali selesai'),
       ),
       body: journeys.isEmpty
           ? const Center(
@@ -49,7 +52,7 @@ class UmrahAllScreen extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, i) => _JourneyTile(
                 record: journeys[i],
-                umrahNum: journeys.length - i,
+                umrahNum: history.ordinalOf(journeys[i].id),
               ),
             ),
     );
@@ -61,6 +64,12 @@ class _JourneyTile extends StatelessWidget {
   final int umrahNum;
 
   const _JourneyTile({required this.record, required this.umrahNum});
+
+  bool get _isWida => record.kind == JourneyKind.wida;
+
+  /// "Umrah ke-3" / "Tawaf Wida' ke-1"
+  String get _title =>
+      _isWida ? "Tawaf Wida' ke-$umrahNum" : 'Umrah ke-$umrahNum';
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +89,7 @@ class _JourneyTile extends StatelessWidget {
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Padam Rekod?'),
-          content: Text('Adakah anda pasti ingin memadam rekod Umrah ke-$umrahNum?'),
+          content: Text('Adakah anda pasti ingin memadam rekod $_title?'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Tidak')),
             FilledButton(
@@ -105,6 +114,7 @@ class _JourneyTile extends StatelessWidget {
                 gpsTrack: record.gpsTrack,
                 checkpoints: record.checkpoints,
                 journeyId: record.id,
+                kind: record.kind,
               ),
             ),
           ),
@@ -119,7 +129,8 @@ class _JourneyTile extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.mosque, color: Colors.white, size: 14),
+                      Icon(_isWida ? Icons.waving_hand : Icons.mosque,
+                          color: Colors.white, size: 14),
                       Text('$umrahNum', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -130,7 +141,7 @@ class _JourneyTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Umrah ke-$umrahNum',
+                        _title,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       Text(
@@ -175,7 +186,7 @@ class _JourneyTile extends StatelessWidget {
       builder: (_) => AlertDialog(
         title: const Text('Padam Rekod?'),
         content:
-            Text('Adakah anda pasti ingin memadam rekod Umrah ke-$umrahNum?'),
+            Text('Adakah anda pasti ingin memadam rekod $_title?'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),

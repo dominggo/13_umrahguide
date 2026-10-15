@@ -1,5 +1,6 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
+import '../models/journey_models.dart';
 
 /// Static wrapper around Firebase Analytics.
 /// All methods are safe no-ops when [initialized] is false.
@@ -24,15 +25,19 @@ class AnalyticsService {
     }
   }
 
-  /// Logged when the user taps "Mulakan Umrah".
-  static Future<void> logJourneyStarted() =>
-      _log('journey_started');
+  /// Logged when the user starts an Umrah journey or a Tawaf Wida' session.
+  static Future<void> logJourneyStarted(
+          {JourneyKind kind = JourneyKind.umrah}) =>
+      _log('journey_started', {'kind': kind.name});
 
-  /// Logged when the user taps "Selesai Ibadah Umrah".
+  /// Logged when the user finishes an Umrah journey or Tawaf Wida' session.
   static Future<void> logJourneyCompleted(
-          {required int checkpointsCompleted}) =>
-      _log('journey_completed',
-          {'checkpoints_completed': checkpointsCompleted});
+          {required int checkpointsCompleted,
+          JourneyKind kind = JourneyKind.umrah}) =>
+      _log('journey_completed', {
+        'checkpoints_completed': checkpointsCompleted,
+        'kind': kind.name,
+      });
 
   /// Logged when the user confirms a checkpoint end.
   static Future<void> logCheckpointCompleted(

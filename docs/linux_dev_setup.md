@@ -7,11 +7,15 @@ This guide documents how to set up and use Flutter on this Linux server (Ubuntu 
 | Item | Value |
 |------|-------|
 | OS | Ubuntu 24.04 LTS |
-| Flutter | 3.27.4 (installed at `/opt/flutter`) |
+| Flutter | 3.27.4 installed at `/opt/flutter` — **outdated**, see note below |
 | Dart | 3.6.2 |
 | Java | OpenJDK 17 (required for Android builds) |
 | Home directory | `/root` |
 | Project directory | `/mnt/shared/13_umrahguide/umrah_guide` |
+
+> **Flutter version note (2026-10-14):** the Android build config was updated for the latest Flutter (3.47.x): Gradle 8.14.3, AGP 8.11.1, Kotlin 2.3.x, NDK 27. The project is verified on Flutter **3.47.7** (Windows, JDK 17). The 3.27.4 install on this server predates that change and has **not** been re-tested against it; upgrade Flutter here (`cd /opt/flutter && git fetch && git checkout stable`) before building.
+>
+> `lib/firebase_options.dart` and `android/app/google-services.json` are gitignored. Copy them from this server's project folder when setting up a new machine (Analytics is disabled without them, the app still runs).
 
 ---
 

@@ -46,4 +46,8 @@ flutter build appbundle --release   # build/app/outputs/bundle/release/app-relea
 
 ## 6. Signing files
 
-The keystore is the only way to publish updates and cannot be regenerated. Keep copies outside the build machine and outside linku. If it is lost, request an upload-key reset in Play Console (Play App Signing is on).
+The keystore is the only way to publish updates and cannot be regenerated. Copies exist on linku and in the OneDrive folder `P:\OneDrive\Apps\umrah-app-signing\` (hash-verified 2026-10-19); keeping one more offline copy is advisable. If all copies are lost, request an upload-key reset in Play Console (Play App Signing is on).
+
+## 7. Pending work
+
+The main todo for all projects is `P:\mnt\shared\00_proxmox\docs\todo.md` (section "Umrah Guide"); this repo does not keep its own todo file.

@@ -345,7 +345,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        leadingWidth: 88,
+        leadingWidth: 96,
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -143,11 +143,18 @@ class _HeaderBanner extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.mosque, color: Colors.white, size: 48),
-          SizedBox(width: 16),
-          Expanded(
+          Image.asset(
+            'assets/images/custom_icons/step_tawaf.png',
+            width: 72,
+            height: 72,
+            color: Colors.white,
+            errorBuilder: (_, __, ___) =>
+                const Icon(Icons.mosque, color: Colors.white, size: 48),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -237,11 +244,11 @@ class _StepCard extends StatelessWidget {
               child: Center(
                 child: Image.asset(
                   iconAsset,
-                  width: 40,
-                  height: 40,
+                  width: 64,
+                  height: 64,
                   color: Colors.white,
                   errorBuilder: (_, __, ___) =>
-                      Icon(iconFallback, color: Colors.white, size: 40),
+                      Icon(iconFallback, color: Colors.white, size: 64),
                 ),
               ),
             ),

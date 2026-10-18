@@ -11,7 +11,7 @@
 ---
 
 ## Huraian Ringkas (80 aksara)
-Panduan lengkap ibadah Umrah dengan doa audio, peta Masjidil Haram & rekod perjalanan.
+Panduan Umrah lengkap: doa audio, peta Masjidil Haram & rekod perjalanan.
 
 ---
 
@@ -19,7 +19,7 @@ Panduan lengkap ibadah Umrah dengan doa audio, peta Masjidil Haram & rekod perja
 
 **Tunaikan Umrah dengan yakin — walau tanpa internet.**
 
-Panduan Umrah ialah aplikasi teman ibadah yang direka khusus untuk jemaah umrah berbahasa Melayu. Semua kandungan tersedia **sepenuhnya offline** — tiada bayaran, tiada iklan.
+Panduan Umrah ialah aplikasi teman ibadah yang direka khusus untuk jemaah umrah berbahasa Melayu. Doa, audio dan panduan tersedia **sepenuhnya offline** (peta memerlukan internet) — tiada bayaran, tiada iklan.
 
 ### ✨ Ciri-Ciri Utama
 
@@ -30,11 +30,11 @@ Daripada Ihram hinggalah Tawaf Wida', setiap langkah dipandu dengan terperinci: 
 Lebih 200 doa dengan audio OGG/MP3 — dengar, ikuti dan hafal dengan mudah. Rantaian audio automatik untuk pengalaman yang lancar.
 
 **📍 Peta Masjidil Haram Interaktif**
-Peta OpenStreetMap offline dengan pengesanan GPS dan penanda 7 lokasi penting: Ka'abah, Safa, Marwah, Hijir Ismail dan lain-lain.
+Peta OpenStreetMap dengan pengesanan GPS dan penanda 7 lokasi penting: Ka'abah, Safa, Marwah, Hijir Ismail dan lain-lain.
 
 **🚶 Rekod Perjalanan Umrah**
 Rekod perjalanan umrah anda secara automatik dengan:
-- 19 *checkpoint* — dari Ihram hingga Tahallul
+- 17 *checkpoint* — dari Ihram hingga Tahallul, serta sesi Tawaf Wida' berasingan (7 *checkpoint*)
 - GPS trek perjalanan dalam Masjidil Haram
 - Ringkasan lengkap: masa, jarak & status setiap langkah
 - Eksport sebagai **PDF** atau **PNG** untuk simpanan kenangan
@@ -67,8 +67,8 @@ Simpan rekod setiap kali umrah — lihat semula bilangan dan tarikh umrah anda.
 ### 🔒 Privasi & Keselamatan
 
 - Tiada akaun diperlukan
-- Tiada data peribadi dikumpul
-- GPS hanya digunakan semasa ibadah berlangsung (boleh dimatikan)
+- Tiada data peribadi dikumpul; analitik penggunaan tanpa nama sahaja (Firebase)
+- GPS hanya digunakan dalam peranti anda dan tidak dihantar ke mana-mana pelayan; kebenaran lokasi boleh ditolak
 
 ---
 

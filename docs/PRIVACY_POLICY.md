@@ -19,9 +19,12 @@ Panduan Umrah is a Flutter-based Android application that provides step-by-step 
 #### a) Location Data (GPS)
 - The app requests `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` permissions.
 - GPS data is used **only within the app** to detect your zone inside Masjidil Haram and to record your Umrah journey path.
-- Location data is **stored locally on your device** (via `shared_preferences`) and is **never transmitted to any server** by this app.
+- Location data is **stored locally on your device** (journey records in the app's private storage) and is **never transmitted to any server** by this app.
 
-#### b) Anonymous Analytics
+#### b) Map Tiles (OpenStreetMap)
+- The map screens download map tiles from `tile.openstreetmap.org`. Like any web request, this exposes your IP address and the tile coordinates requested to OpenStreetMap. Your GPS position is **not** sent; only the map area being viewed is requested.
+
+#### c) Anonymous Analytics
 - The app uses **Firebase Analytics** to collect anonymous, aggregated usage data (e.g., screen views, feature usage).
 - **No personally identifiable information (PII) is collected** through analytics.
 - Firebase Analytics data is processed by Google. Refer to [Google's Privacy Policy](https://policies.google.com/privacy) for details.
@@ -35,7 +38,8 @@ Panduan Umrah is a Flutter-based Android application that provides step-by-step 
 
 ### 4. Data Storage
 
-- All journey records, bookmarks, and Tawaf/Sa'ie round progress are stored **locally on your device only**.
+- All journey records, bookmarks, and Tawaf/Sa'ie round progress are stored **locally on your device only**. Uninstalling the app deletes them; you can also delete journey records inside the app.
+- Journey exports (PDF/PNG) are created only when you choose to share them, and go only where you send them.
 - No data is uploaded to external servers by this app.
 
 ### 5. Third-Party Services
@@ -43,7 +47,7 @@ Panduan Umrah is a Flutter-based Android application that provides step-by-step 
 | Service | Purpose | Privacy Policy |
 |---|---|---|
 | Firebase Analytics (Google) | Anonymous usage analytics | [Google Privacy Policy](https://policies.google.com/privacy) |
-| OpenStreetMap | Offline map tiles | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
+| OpenStreetMap | Map tiles (downloaded when online) | [OSM Privacy Policy](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
 
 ### 6. Children's Privacy
 
@@ -71,9 +75,12 @@ Panduan Umrah ialah aplikasi Android berasaskan Flutter yang menyediakan panduan
 #### a) Data Lokasi (GPS)
 - Aplikasi ini memerlukan kebenaran `ACCESS_FINE_LOCATION` dan `ACCESS_COARSE_LOCATION`.
 - Data GPS digunakan **dalam aplikasi sahaja** untuk mengesan zon anda di dalam Masjidil Haram dan merekod laluan perjalanan Umrah anda.
-- Data lokasi **disimpan secara setempat di peranti anda** (melalui `shared_preferences`) dan **tidak dihantar ke mana-mana pelayan** oleh aplikasi ini.
+- Data lokasi **disimpan secara setempat di peranti anda** (rekod perjalanan dalam storan peribadi aplikasi) dan **tidak dihantar ke mana-mana pelayan** oleh aplikasi ini.
 
-#### b) Analitik Tanpa Nama
+#### b) Jubin Peta (OpenStreetMap)
+- Skrin peta memuat turun jubin peta daripada `tile.openstreetmap.org`. Seperti permintaan web biasa, alamat IP anda dan koordinat jubin yang diminta didedahkan kepada OpenStreetMap. Kedudukan GPS anda **tidak** dihantar; hanya kawasan peta yang dilihat diminta.
+
+#### c) Analitik Tanpa Nama
 - Aplikasi ini menggunakan **Firebase Analytics** untuk mengumpul data penggunaan tanpa nama dan agregat (contoh: paparan skrin, penggunaan ciri).
 - **Tiada maklumat peribadi (PII) dikumpul** melalui analitik.
 - Data Firebase Analytics diproses oleh Google. Rujuk [Dasar Privasi Google](https://policies.google.com/privacy) untuk maklumat lanjut.
@@ -88,6 +95,7 @@ Panduan Umrah ialah aplikasi Android berasaskan Flutter yang menyediakan panduan
 ### 4. Penyimpanan Data
 
 - Semua rekod perjalanan, penanda buku, dan kemajuan pusingan Tawaf/Sa'ie disimpan **secara setempat di peranti anda sahaja**.
+- Eksport perjalanan (PDF/PNG) hanya dibuat apabila anda memilih untuk berkongsi, dan hanya ke destinasi pilihan anda.
 - Tiada data dimuat naik ke pelayan luar oleh aplikasi ini.
 
 ### 5. Perkhidmatan Pihak Ketiga
@@ -95,7 +103,7 @@ Panduan Umrah ialah aplikasi Android berasaskan Flutter yang menyediakan panduan
 | Perkhidmatan | Tujuan | Dasar Privasi |
 |---|---|---|
 | Firebase Analytics (Google) | Analitik penggunaan tanpa nama | [Dasar Privasi Google](https://policies.google.com/privacy) |
-| OpenStreetMap | Peta luar talian | [Dasar Privasi OSM](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
+| OpenStreetMap | Jubin peta (dimuat turun semasa dalam talian) | [Dasar Privasi OSM](https://wiki.osmfoundation.org/wiki/Privacy_Policy) |
 
 ### 6. Privasi Kanak-Kanak
 

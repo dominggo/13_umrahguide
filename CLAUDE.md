@@ -104,7 +104,7 @@ AppBar actions (all tabs):
 ## Google Play Status (2026-10-19)
 
 - Personal developer account: production is locked until a closed test has run with at least 12 testers opted in for 14 consecutive days. Open testing is locked too.
-- Closed testing "Alpha": release `1.1.0+3`, tester list `closed1` (15 testers), countries MY, ID, SG, SA, TH (Brunei is not offered by Play). 14 changes were submitted for review on 2026-10-19.
+- Closed testing "Alpha": release `1.1.0+3`, tester list `closed1` (15 testers), countries MY, ID, SG, SA, TH (Brunei is not offered by Play). 14 changes were submitted for review on 2026-10-19; pre-review checks passed and Play Console showed "Your changes are now in review" the same day (Google review takes about 7 days; check Publishing overview).
 - Privacy policy URL on Play is pinned to commit `1690ff0` of `docs/PRIVACY_POLICY.md` on GitHub (`dominggo/13_umrahguide`); keep that commit reachable and update the URL in Play Console when the policy changes.
 - Data safety: collected App interactions + Device or other IDs for Analytics (Firebase), not shared; advertising ID declared as used for Analytics.
 - The Play bundle is 88.7 MB, so the browser upload tool cannot send it; upload `build/app/outputs/bundle/release/app-release.aab` manually in Play Console.

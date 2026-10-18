@@ -40,6 +40,10 @@ Use `build.bat` (Windows) as a shortcut for common build tasks.
 - `android/gradle.properties` sets `kotlin.incremental=false` (Kotlin can't write its cache on the `P:` shared drive). Don't remove it.
 - Gitignored files that must exist locally: `lib/firebase_options.dart`, `android/app/google-services.json` (placeholders work, Analytics off), and for release signing `android/key.properties` + `android/app/upload-keystore.jks`. Never commit them; the keystore is not regenerable.
 - Running Flutter newer than the project can make it rewrite `analysis_options.yaml`, `pubspec.lock` and `android/gradle.properties`; check `git status` and revert unintended changes.
+- Windows setup (scoop): `temurin17-jdk`, `flutter`, `android-clt`; set `ANDROID_HOME` to an SDK on `C:` (e.g. `C:\Users\<you>\Android\Sdk`) and install `cmdline-tools;latest`, `platform-tools`, `platforms;android-35/36`, `build-tools;36.0.0`, `ndk;27.0.12077973` with `sdkmanager`. Without `cmdline-tools` inside the SDK, `flutter build appbundle` fails at "failed to strip debug symbols". Check with `flutter doctor -v`.
+- Release builds: `flutter build appbundle --release` (about 7 min on the `P:` drive). Play already holds earlier version codes, so bump the build number in `pubspec.yaml` first.
+- **Back up the signing files outside the build machine**: `android/app/upload-keystore.jks`, `android/key.properties`, `lib/firebase_options.dart`, `android/app/google-services.json`. The keystore is the only way to publish updates and cannot be regenerated; as of 2026-10-19 no off-machine backup is known to exist.
+- The debug build uses application ID `com.faeq.umrahmas.dev` ("Panduan Umrah dev"); `google-services.json` must contain a client for both `com.faeq.umrahmas` and the `.dev` suffix.
 
 ## Architecture
 
@@ -95,6 +99,14 @@ AppBar actions (all tabs):
 | `lib/screens/umrah_tamat_screen.dart` | Journey summary with OSM map, checkpoint timeline, PNG/PDF export (`UmrahTamatScreen`) |
 | `lib/screens/map_screen.dart` | Tab 3 — offline OSM map with GPS overlay and zone markers (`MapScreen`) |
 | `lib/utils/map_tile_cache.dart` | Shared in-memory OSM tile cache (singleton) |
+
+## Google Play Status (2026-10-19)
+
+- Personal developer account: production is locked until a closed test has run with at least 12 testers opted in for 14 consecutive days. Open testing is locked too.
+- Closed testing "Alpha": release `1.1.0+3`, tester list `closed1` (15 testers), countries MY, ID, SG, SA, TH (Brunei is not offered by Play). 14 changes were submitted for review on 2026-10-19.
+- Privacy policy URL on Play is pinned to commit `1690ff0` of `docs/PRIVACY_POLICY.md` on GitHub (`dominggo/13_umrahguide`); keep that commit reachable and update the URL in Play Console when the policy changes.
+- Data safety: collected App interactions + Device or other IDs for Analytics (Firebase), not shared; advertising ID declared as used for Analytics.
+- The Play bundle is 88.7 MB, so the browser upload tool cannot send it; upload `build/app/outputs/bundle/release/app-release.aab` manually in Play Console.
 
 ## Asset Conventions
 

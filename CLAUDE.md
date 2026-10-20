@@ -101,7 +101,9 @@ AppBar actions (all tabs):
 | `lib/screens/map_screen.dart` | Tab 3 — offline OSM map with GPS overlay and zone markers (`MapScreen`) |
 | `lib/utils/map_tile_cache.dart` | Shared in-memory OSM tile cache (singleton) |
 
-## Google Play Status (2026-10-19)
+## Google Play Status (2026-10-20)
+
+**Update 2026-10-20:** the review passed and the closed test is live, but **0 testers have opted in yet**. Opt-in links, console URLs (use `/console/u/1/`), what to do next and the invite email are in `docs/play_closed_test_handoff.md`.
 
 - Personal developer account: production is locked until a closed test has run with at least 12 testers opted in for 14 consecutive days. Open testing is locked too.
 - Closed testing "Alpha": release `1.1.0+3`, tester list `closed1` (15 testers), countries MY, ID, SG, SA, TH (Brunei is not offered by Play). 14 changes were submitted for review on 2026-10-19; pre-review checks passed and Play Console showed "Your changes are now in review" the same day (Google review takes about 7 days; check Publishing overview).

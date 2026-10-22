@@ -13,12 +13,35 @@ import 'doa_viewer_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  /// Screens pushed above Home set this to ask it to switch tab (then reset).
+  static final ValueNotifier<int?> tabRequest = ValueNotifier<int?>(null);
+  static const umrahTab = 1;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    HomeScreen.tabRequest.addListener(_onTabRequest);
+  }
+
+  @override
+  void dispose() {
+    HomeScreen.tabRequest.removeListener(_onTabRequest);
+    super.dispose();
+  }
+
+  void _onTabRequest() {
+    final tab = HomeScreen.tabRequest.value;
+    if (tab == null) return;
+    HomeScreen.tabRequest.value = null;
+    setState(() => _selectedTab = tab);
+  }
 
   static const _tabs = [
     _MenuTab(),

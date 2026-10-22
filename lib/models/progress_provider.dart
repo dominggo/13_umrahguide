@@ -26,8 +26,4 @@ class ProgressProvider extends ChangeNotifier {
     _autoPlayEnabled = prefs.getBool(_autoPlayKey) ?? true;
     notifyListeners();
   }
-
-  Future<void> clearProgress() async {
-    notifyListeners();
-  }
 }

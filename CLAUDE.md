@@ -53,7 +53,7 @@ Use `build.bat` (Windows) as a shortcut for common build tasks.
 **State Management:** `MultiProvider` at root (`main.dart`) with 5 providers:
 - `AudioProvider` — wraps `just_audio`; single global audio player. `play(assetPath)` toggles; navigating away calls `stop()`. Emits a track-complete stream used by `DoaViewerScreen` for auto-advance.
 - `BookmarkProvider` — bookmark CRUD via `shared_preferences`; key format `{stepId}__{substepId}__{doaTitle}`.
-- `ProgressProvider` — only holds the persisted auto-play toggle (`autoPlayEnabled`); `clearProgress()` is a no-op kept for call sites. Round progress is NOT stored here — it comes from journey checkpoints in `LocationProvider`.
+- `ProgressProvider` — only holds the persisted auto-play toggle (`autoPlayEnabled`); Round progress is NOT stored here — it comes from journey checkpoints in `LocationProvider`.
 - `LocationProvider` — GPS subscription, zone auto-detection against 7 hardcoded Masjidil Haram coordinates, manual zone override, journey GPS/checkpoint recording. One session at a time, of a `JourneyKind`: `umrah` (CP1–17) or `wida` (CP18–24, standalone Tawaf Wida'). Checkpoints outside the active kind's range are ignored, so a Tawaf doa opened during a Wida' session can't write into it.
 - `JourneyHistoryProvider` — CRUD for completed journeys; persisted as JSON at `{appDocDir}/umrah_history.json`.
 
@@ -79,6 +79,8 @@ AppBar actions (all tabs):
 ```
 
 **Data layer:** All content hardcoded in `lib/data/umrah_data.dart` as a `const List<UmrahStep>`. No network calls; all assets bundled offline. Asset paths are string literals.
+
+**Journey vs browsing:** `DoaViewerScreen` records checkpoint starts and shows the start/end buttons only when opened with `fromJourney: true` (Umrah tab flow). From the Menu tab, search or bookmarks it records nothing; a niat doa there shows "Mulakan Umrah? Tekan di sini" (or "Sambung di tab Umrah" while a session runs), which sets `HomeScreen.tabRequest` and pops to Home on the Umrah tab.
 
 **Auto-play groups:** `DoaViewerScreen` groups consecutive `DoaItem`s where `autoPlay: true` and auto-advances through them; items with `autoPlay: false` act as manual break-points requiring user tap.
 

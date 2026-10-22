@@ -138,7 +138,6 @@ User taps "Tamatkan Umrah ini" (Tahallul step only)
       → snapshotJourney() captures all data
       → All internal state cleared
   → history.addOrUpdateJourney(record)
-  → prog.clearProgress()
   → Navigate to UmrahTamatScreen
 
 User taps "Batalkan Umrah" (any journey step except tahallul)

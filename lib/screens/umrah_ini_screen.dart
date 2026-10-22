@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../data/umrah_data.dart';
 import '../models/journey_models.dart';
 import '../models/location_provider.dart';
-import '../models/progress_provider.dart';
 import '../models/umrah_location.dart';
 import '../models/umrah_step.dart';
 import '../services/analytics_service.dart';
@@ -18,7 +17,6 @@ class UmrahIniScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = context.watch<LocationProvider>();
-    final prog = context.watch<ProgressProvider>();
     final currentZone = loc.currentZone;
     final isActive = loc.isUmrahActive;
     final isWidaActive = loc.isWidaActive;
@@ -179,7 +177,7 @@ class UmrahIniScreen extends StatelessWidget {
               }),
 
               // Tawaf Wida' — independent of any Umrah journey
-              _buildWidaCard(context, loc, prog),
+              _buildWidaCard(context, loc),
             ],
           ),
         ),
@@ -198,7 +196,7 @@ class UmrahIniScreen extends StatelessWidget {
                   side: const BorderSide(color: Colors.red),
                   minimumSize: const Size.fromHeight(44),
                 ),
-                onPressed: () => _endJourney(context, loc, prog),
+                onPressed: () => _endJourney(context, loc),
               ),
             ),
           ),
@@ -298,8 +296,7 @@ class UmrahIniScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _endJourney(
-      BuildContext context, LocationProvider loc, ProgressProvider prog) async {
+  Future<void> _endJourney(BuildContext context, LocationProvider loc) async {
     final history = context.read<JourneyHistoryProvider>();
     final isWida = loc.journeyKind == JourneyKind.wida;
     final confirm = await showDialog<bool>(
@@ -327,7 +324,6 @@ class UmrahIniScreen extends StatelessWidget {
     AnalyticsService.logJourneyCompleted(
         checkpointsCompleted: record.checkpoints.where((c) => c.isCompleted).length,
         kind: record.kind);
-    if (context.mounted) await prog.clearProgress();
 
     if (context.mounted) {
       Navigator.pushReplacement(
@@ -348,8 +344,7 @@ class UmrahIniScreen extends StatelessWidget {
 
   /// Card for the standalone Tawaf Wida' session. Wida' is not part of an Umrah
   /// journey: several Umrahs may precede a single Wida'.
-  Widget _buildWidaCard(
-      BuildContext context, LocationProvider loc, ProgressProvider prog) {
+  Widget _buildWidaCard(BuildContext context, LocationProvider loc) {
     final widaStep = umrahSteps.firstWhere((s) => s.id == 'tawaf_wida');
     final isWidaActive = loc.isWidaActive;
     final umrahBusy = loc.isUmrahActive;
@@ -414,7 +409,7 @@ class UmrahIniScreen extends StatelessWidget {
                         side: const BorderSide(color: Colors.red),
                         minimumSize: const Size.fromHeight(40),
                       ),
-                      onPressed: () => _endJourney(context, loc, prog),
+                      onPressed: () => _endJourney(context, loc),
                     ),
                   ),
                 ] else

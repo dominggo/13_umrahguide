@@ -6,11 +6,11 @@ import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
-import '../models/progress_provider.dart';
 import '../models/location_provider.dart';
 import '../models/journey_models.dart';
 import '../models/journey_history_provider.dart';
 import '../services/analytics_service.dart';
+import 'home_screen.dart';
 import 'umrah_tamat_screen.dart';
 
 /// Flat entry combining a substep and one of its duas, for fullStep navigation.
@@ -162,7 +162,10 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   }
 
   /// Records checkPointStart for doa at [index] if journey is active.
+  /// Only from the journey flow: the Menu tab has no end button, so a start
+  /// recorded there could never be closed.
   void _maybeRecordCheckpointStart(int index) {
+    if (!widget.fromJourney) return;
     if (index < 0 || index >= _duas.length) return;
     final doa = _duas[index];
     if (doa.checkPointStart == null) return;
@@ -267,7 +270,6 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   Future<void> _confirmFinalizeJourney(
       BuildContext ctx, LocationProvider loc) async {
     final history = ctx.read<JourneyHistoryProvider>();
-    final prog = ctx.read<ProgressProvider>();
     final kindLabel =
         loc.journeyKind == JourneyKind.wida ? "Tawaf Wida'" : 'Umrah';
 
@@ -309,10 +311,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
       return; // Stop here if save failed
     }
 
-    // 3. Clear progress only after successful save
-    await prog.clearProgress();
-
-    // 4. Navigate
+    // 3. Navigate
     if (ctx.mounted) {
       Navigator.of(ctx).pushReplacement(
         MaterialPageRoute(
@@ -468,10 +467,14 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                             18 => JourneyKind.wida,
                             _ => null,
                           };
-                          final showStart =
-                              startKind != null && !loc.isJourneyActive;
+                          final showStart = widget.fromJourney &&
+                              startKind != null &&
+                              !loc.isJourneyActive;
+                          // Menu flow records nothing, so point to the Umrah tab
+                          final showGoToUmrah =
+                              !widget.fromJourney && startKind != null;
 
-                          if (!showCpEnd && !showStart) {
+                          if (!showCpEnd && !showStart && !showGoToUmrah) {
                             return const SizedBox.shrink();
                           }
 
@@ -511,6 +514,32 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                                           _maybeRecordCheckpointStart(
                                               _currentIndex);
                                         }
+                                      },
+                                    ),
+                                  ),
+                                if (showGoToUmrah)
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      icon: const Icon(Icons.directions_walk,
+                                          size: 16),
+                                      label: Text(
+                                          loc.isJourneyActive
+                                              ? 'Sambung di tab Umrah'
+                                              : startKind == JourneyKind.wida
+                                                  ? "Mulakan Tawaf Wida'? Tekan di sini"
+                                                  : 'Mulakan Umrah? Tekan di sini',
+                                          style:
+                                              const TextStyle(fontSize: 12)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor:
+                                            const Color(0xFF1B5E20),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      onPressed: () {
+                                        HomeScreen.tabRequest.value =
+                                            HomeScreen.umrahTab;
+                                        Navigator.popUntil(
+                                            ctx, (route) => route.isFirst);
                                       },
                                     ),
                                   ),

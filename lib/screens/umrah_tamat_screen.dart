@@ -13,7 +13,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/journey_models.dart';
 import '../models/journey_history_provider.dart';
-import '../models/progress_provider.dart';
 import '../data/umrah_data.dart';
 
 class UmrahTamatScreen extends StatefulWidget {
@@ -40,20 +39,6 @@ class UmrahTamatScreen extends StatefulWidget {
 
 class _UmrahTamatScreenState extends State<UmrahTamatScreen> {
   final _screenshotCtrl = ScreenshotController();
-  bool _saved = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _autoSave());
-  }
-
-  Future<void> _autoSave() async {
-    if (_saved) return;
-    _saved = true;
-    final prog = context.read<ProgressProvider>();
-    await prog.clearProgress();
-  }
 
   Duration get _duration => widget.endTime.difference(widget.startTime);
 

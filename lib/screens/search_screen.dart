@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import 'doa_viewer_screen.dart';
+import '../utils/format.dart';
 
 class UmrahSearchDelegate extends SearchDelegate<DoaItem?> {
   UmrahSearchDelegate() : super(searchFieldLabel: 'Cari doa...');
@@ -65,19 +66,20 @@ class UmrahSearchDelegate extends SearchDelegate<DoaItem?> {
                     r.doa.imagePath!,
                     width: 48,
                     height: 48,
+                    cacheWidth: 144,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.menu_book, size: 36, color: Color(0xFF1B5E20)),
+                        const Icon(Icons.menu_book, size: 36, color: kPrimaryGreen),
                   ),
                 )
-              : const Icon(Icons.menu_book, color: Color(0xFF1B5E20)),
+              : const Icon(Icons.menu_book, color: kPrimaryGreen),
           title: Text(r.doa.title, style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(
             '${r.stepTitle} › ${r.substepTitle}',
             style: const TextStyle(fontSize: 12),
           ),
           trailing: r.doa.audioPath != null
-              ? const Icon(Icons.volume_up_outlined, size: 18, color: Color(0xFF1B5E20))
+              ? const Icon(Icons.volume_up_outlined, size: 18, color: kPrimaryGreen)
               : null,
           onTap: () {
             close(context, r.doa);

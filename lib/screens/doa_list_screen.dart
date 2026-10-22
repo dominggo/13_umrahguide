@@ -4,6 +4,7 @@ import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
 import 'doa_viewer_screen.dart';
+import '../utils/format.dart';
 
 class DoaListScreen extends StatelessWidget {
   final UmrahSubStep subStep;
@@ -93,6 +94,7 @@ class _DoaTile extends StatelessWidget {
                         doa.imagePath!,
                         width: 72,
                         height: 72,
+                        cacheWidth: 216,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _placeholder(),
                       )
@@ -134,7 +136,7 @@ class _DoaTile extends StatelessWidget {
               IconButton(
                 icon: Icon(
                   bm.isBookmarked(bmKey) ? Icons.bookmark : Icons.bookmark_border,
-                  color: bm.isBookmarked(bmKey) ? const Color(0xFF1B5E20) : Colors.grey,
+                  color: bm.isBookmarked(bmKey) ? kPrimaryGreen : Colors.grey,
                   size: 22,
                 ),
                 onPressed: () => bm.toggle(bmKey),
@@ -144,7 +146,7 @@ class _DoaTile extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     isPlaying ? Icons.pause_circle : Icons.play_circle,
-                    color: const Color(0xFF1B5E20),
+                    color: kPrimaryGreen,
                     size: 36,
                   ),
                   onPressed: () => context.read<AudioProvider>().play(doa.audioPath!),
@@ -160,8 +162,8 @@ class _DoaTile extends StatelessWidget {
     return Container(
       width: 72,
       height: 72,
-      color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
-      child: const Icon(Icons.menu_book, color: Color(0xFF1B5E20), size: 36),
+      color: kPrimaryGreen.withValues(alpha: 0.1),
+      child: const Icon(Icons.menu_book, color: kPrimaryGreen, size: 36),
     );
   }
 }
@@ -177,15 +179,15 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
+        color: kPrimaryGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10, color: const Color(0xFF1B5E20)),
+          Icon(icon, size: 10, color: kPrimaryGreen),
           const SizedBox(width: 3),
-          Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF1B5E20))),
+          Text(label, style: const TextStyle(fontSize: 10, color: kPrimaryGreen)),
         ],
       ),
     );

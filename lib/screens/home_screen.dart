@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/bookmark_provider.dart';
+import '../models/journey_history_provider.dart';
 import 'step_detail_screen.dart';
 import 'search_screen.dart';
 import 'map_screen.dart';
 import 'umrah_all_screen.dart';
 import 'umrah_ini_screen.dart';
 import 'doa_viewer_screen.dart';
+import '../utils/format.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,11 +53,22 @@ class _HomeScreenState extends State<HomeScreen> {
     MapScreen(),
   ];
 
+  Widget _title() => switch (_selectedTab) {
+        1 => const Text('Umrah'),
+        2 => Consumer<JourneyHistoryProvider>(
+            builder: (_, h, __) => Text(h.totalWidaCount > 0
+                ? "Sejarah — ${h.totalUmrahCount} Umrah, ${h.totalWidaCount} Wida'"
+                : 'Sejarah — ${h.totalUmrahCount} Umrah'),
+          ),
+        3 => const Text('Peta Masjidil Haram'),
+        _ => const Text('Panduan Umrah'),
+      };
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panduan Umrah'),
+        title: _title(),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -77,7 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _tabs[_selectedTab],
+      // IndexedStack keeps each tab's state (scroll, map position).
+      body: IndexedStack(index: _selectedTab, children: _tabs),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedTab,
         onDestinationSelected: (i) => setState(() => _selectedTab = i),
@@ -107,13 +122,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showAbout(BuildContext context) {
+  Future<void> _showAbout(BuildContext context) async {
+    var version = '';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      version = '${info.version} (${info.buildNumber})';
+    } catch (_) {}
+    if (!context.mounted) return;
     showAboutDialog(
       context: context,
       applicationName: 'Panduan Umrah',
-      applicationVersion: '1.0.0',
+      applicationVersion: version,
       applicationIcon:
-          const Icon(Icons.mosque, size: 48, color: Color(0xFF1B5E20)),
+          const Icon(Icons.mosque, size: 48, color: kPrimaryGreen),
       children: const [
         Text(
             'Aplikasi panduan ibadah umrah lengkap dengan doa dalam gambar dan audio.'),
@@ -160,7 +181,7 @@ class _HeaderBanner extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF388E3C)],
+          colors: [kPrimaryGreen, Color(0xFF388E3C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -211,7 +232,7 @@ class _StepCard extends StatelessWidget {
   const _StepCard({required this.step});
 
   static const _stepColors = [
-    Color(0xFF1B5E20),
+    kPrimaryGreen,
     Color(0xFF0D47A1),
     Color(0xFF4A148C),
     Color(0xFF880E4F),
@@ -380,6 +401,8 @@ class _BookmarksTab extends StatelessWidget {
                     index: i,
                     siblings: sub.duas,
                     substepTitle: sub.title,
+                    stepId: step.id,
+                    substepId: sub.id,
                     key: key,
                   ));
             }
@@ -401,7 +424,7 @@ class _BookmarksTab extends StatelessWidget {
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: Color(0xFF1B5E20)),
+                    color: kPrimaryGreen),
               ),
             ),
             ...entry.value.map((bEntry) => Card(
@@ -414,14 +437,15 @@ class _BookmarksTab extends StatelessWidget {
                               bEntry.doa.imagePath!,
                               width: 48,
                               height: 48,
+                              cacheWidth: 144,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => const Icon(
                                   Icons.menu_book,
                                   size: 36,
-                                  color: Color(0xFF1B5E20)),
+                                  color: kPrimaryGreen),
                             ),
                           )
-                        : const Icon(Icons.menu_book, color: Color(0xFF1B5E20)),
+                        : const Icon(Icons.menu_book, color: kPrimaryGreen),
                     title: Text(bEntry.doa.title,
                         style: const TextStyle(
                             fontWeight: FontWeight.w600, fontSize: 13)),
@@ -429,7 +453,7 @@ class _BookmarksTab extends StatelessWidget {
                         style: const TextStyle(fontSize: 11)),
                     trailing: IconButton(
                       icon:
-                          const Icon(Icons.bookmark, color: Color(0xFF1B5E20)),
+                          const Icon(Icons.bookmark, color: kPrimaryGreen),
                       onPressed: () => bm.toggle(bEntry.key),
                     ),
                     onTap: () => Navigator.push(
@@ -439,6 +463,8 @@ class _BookmarksTab extends StatelessWidget {
                           duas: bEntry.siblings,
                           initialIndex: bEntry.index,
                           title: bEntry.substepTitle,
+                          stepId: bEntry.stepId,
+                          substepId: bEntry.substepId,
                         ),
                       ),
                     ),
@@ -474,6 +500,8 @@ class _BookmarkEntry {
   final int index;
   final List<DoaItem> siblings;
   final String substepTitle;
+  final String stepId;
+  final String substepId;
   final String key;
 
   const _BookmarkEntry({
@@ -481,6 +509,8 @@ class _BookmarkEntry {
     required this.index,
     required this.siblings,
     required this.substepTitle,
+    required this.stepId,
+    required this.substepId,
     required this.key,
   });
 }

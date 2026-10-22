@@ -8,12 +8,14 @@ import 'journey_record.dart';
 class JourneyHistoryProvider extends ChangeNotifier {
   List<UmrahJourneyRecord> _journeys = [];
   String? _errorMsg;
+  late final Future<void> _ready;
 
-  List<UmrahJourneyRecord> get journeys {
-    final sorted = List.of(_journeys)
-      ..sort((a, b) => b.startTime.compareTo(a.startTime));
-    return List.unmodifiable(sorted);
-  }
+  // Derived data, rebuilt by _reindex() whenever _journeys changes.
+  List<UmrahJourneyRecord> _sorted = const [];
+  Map<String, int> _ordinals = const {};
+
+  /// Journeys, newest first.
+  List<UmrahJourneyRecord> get journeys => _sorted;
 
   int get totalUmrahCount =>
       _journeys.where((j) => j.kind == JourneyKind.umrah).length;
@@ -22,20 +24,25 @@ class JourneyHistoryProvider extends ChangeNotifier {
 
   /// 1-based chronological number of journey [id] among records of its kind
   /// (e.g. "Umrah ke-3"); 0 if not found.
-  int ordinalOf(String id) {
-    final idx = _journeys.indexWhere((j) => j.id == id);
-    if (idx < 0) return 0;
-    final kind = _journeys[idx].kind;
-    final start = _journeys[idx].startTime;
-    return _journeys
-            .where((j) => j.kind == kind && j.startTime.isBefore(start))
-            .length +
-        1;
-  }
+  int ordinalOf(String id) => _ordinals[id] ?? 0;
+
   String? get errorMsg => _errorMsg;
 
   JourneyHistoryProvider() {
-    _load();
+    _ready = _load();
+  }
+
+  void _reindex() {
+    _sorted = List.unmodifiable(List.of(_journeys)
+      ..sort((a, b) => b.startTime.compareTo(a.startTime)));
+    final counts = <JourneyKind, int>{};
+    final ordinals = <String, int>{};
+    for (final j in _sorted.reversed) {
+      final n = (counts[j.kind] ?? 0) + 1;
+      counts[j.kind] = n;
+      ordinals[j.id] = n;
+    }
+    _ordinals = ordinals;
   }
 
   Future<File> _file() async {
@@ -44,75 +51,61 @@ class JourneyHistoryProvider extends ChangeNotifier {
   }
 
   Future<void> _load() async {
+    File? file;
     try {
-      final file = await _file();
-      if (!await file.exists()) {
-        _journeys = [];
-        _errorMsg = null;
-        return;
-      }
-      final content = await file.readAsString();
-      final list = jsonDecode(content) as List<dynamic>;
+      file = await _file();
+      if (!await file.exists()) return;
+      final list = jsonDecode(await file.readAsString()) as List<dynamic>;
       _journeys = list
           .map((e) => UmrahJourneyRecord.fromJson(e as Map<String, dynamic>))
           .toList();
       _errorMsg = null;
-      notifyListeners();
-      await migrateIfNeeded();
     } catch (e) {
-      _errorMsg = 'Error loading journeys: $e';
+      // Keep the unreadable file aside so the next save can't overwrite it.
+      var kept = '';
+      try {
+        if (file != null && await file.exists()) {
+          final ts = DateTime.now().millisecondsSinceEpoch;
+          final backup = await file.rename(
+              file.path.replaceFirst('.json', '.corrupt-$ts.json'));
+          kept = '\nSalinan disimpan: ${backup.path.split('/').last}';
+        }
+      } catch (_) {}
+      _journeys = [];
+      _errorMsg = 'Rekod sejarah tidak dapat dibaca: $e$kept';
+    } finally {
+      _reindex();
       notifyListeners();
     }
   }
 
+  /// Atomic write: a crash mid-write leaves the previous file intact.
   Future<void> _save() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/umrah_history.json');
-
-      final jsonList = _journeys.map((j) => j.toJson()).toList();
-      final jsonString = jsonEncode(jsonList);
-
-      await file.writeAsString(jsonString);
-
-      // DEBUG: Verify immediately
-      debugPrint('✓ Saved ${jsonString.length} chars to ${file.path}');
-      debugPrint('✓ Journeys in memory: ${_journeys.length}');
-    } catch (e, stack) {
-      debugPrint('✗ Save error: $e');
-      debugPrint(stack.toString());
-      rethrow; // Important: let caller know it failed
-    }
+    final file = await _file();
+    final tmp = File('${file.path}.tmp');
+    await tmp.writeAsString(
+        jsonEncode(_journeys.map((j) => j.toJson()).toList()),
+        flush: true);
+    await tmp.rename(file.path);
   }
 
-  Future<void> addJourney(UmrahJourneyRecord record) async {
-    _journeys.add(record);
-    notifyListeners();
-    await _save();
-  }
-
+  /// Saves first, then notifies; throws if the save fails.
   Future<void> addOrUpdateJourney(UmrahJourneyRecord record) async {
+    await _ready;
     final idx = _journeys.indexWhere((j) => j.id == record.id);
     if (idx >= 0) {
       _journeys[idx] = record;
     } else {
       _journeys.add(record);
     }
-
-    await _save(); // ← SAVE FIRST (was after notifyListeners)
-    notifyListeners(); // ← Then notify
+    _errorMsg = null;
+    await _save();
+    _changed();
   }
 
-  Future<void> migrateIfNeeded() async {
-    var changed = false;
-    for (var j in _journeys) {
-      if (j.version == 0) {
-        j.version = 1;
-        j.completed = j.completed; // keep existing semantics
-        changed = true;
-      }
-    }
-    if (changed) await _save();
+  void _changed() {
+    _reindex();
+    notifyListeners();
   }
 
   Future<void> updateJourney(
@@ -121,13 +114,14 @@ class JourneyHistoryProvider extends ChangeNotifier {
     DateTime? endTime,
     String? notes,
   }) async {
+    await _ready;
     final idx = _journeys.indexWhere((j) => j.id == id);
     if (idx < 0) return;
     final j = _journeys[idx];
     if (startTime != null) j.startTime = startTime;
     if (endTime != null) j.endTime = endTime;
     if (notes != null) j.notes = notes;
-    notifyListeners();
+    _changed();
     await _save();
   }
 
@@ -139,6 +133,7 @@ class JourneyHistoryProvider extends ChangeNotifier {
     DateTime? startTime,
     DateTime? endTime,
   }) async {
+    await _ready;
     final idx = _journeys.indexWhere((j) => j.id == journeyId);
     if (idx < 0) return false;
     final journey = _journeys[idx];
@@ -150,18 +145,22 @@ class JourneyHistoryProvider extends ChangeNotifier {
     if (cpIdx < 0) return false;
     if (startTime != null) journey.checkpoints[cpIdx].startTime = startTime;
     if (endTime != null) journey.checkpoints[cpIdx].endTime = endTime;
-    notifyListeners();
+    _changed();
     await _save();
     return true;
   }
 
   Future<void> deleteJourney(String id) async {
+    await _ready;
     _journeys.removeWhere((j) => j.id == id);
-    notifyListeners();
+    _changed();
     await _save();
   }
 
-  UmrahJourneyRecord? getById(String id) => _journeys
-      .cast<UmrahJourneyRecord?>()
-      .firstWhere((j) => j?.id == id, orElse: () => null);
+  UmrahJourneyRecord? getById(String id) {
+    for (final j in _journeys) {
+      if (j.id == id) return j;
+    }
+    return null;
+  }
 }

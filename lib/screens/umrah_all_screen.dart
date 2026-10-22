@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/journey_history_provider.dart';
 import '../models/journey_models.dart';
 import '../models/journey_record.dart';
+import '../utils/format.dart';
 import 'umrah_tamat_screen.dart';
 
 class UmrahAllScreen extends StatelessWidget {
@@ -13,29 +14,26 @@ class UmrahAllScreen extends StatelessWidget {
     final history = context.watch<JourneyHistoryProvider>();
     final journeys = history.journeys;
 
-    if (history.errorMsg != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Sejarah Umrah')),
-        body: Center(
+    // Title (with counts) is in HomeScreen's AppBar.
+    if (history.errorMsg != null && journeys.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 12),
-              Text(history.errorMsg!, style: TextStyle(color: Colors.red[700])),
+              Text(history.errorMsg!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red[700])),
             ],
           ),
         ),
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(history.totalWidaCount > 0
-            ? "Sejarah — ${history.totalUmrahCount} Umrah, ${history.totalWidaCount} Tawaf Wida'"
-            : 'Sejarah Umrah — ${history.totalUmrahCount} kali selesai'),
-      ),
-      body: journeys.isEmpty
+    return journeys.isEmpty
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -54,8 +52,7 @@ class UmrahAllScreen extends StatelessWidget {
                 record: journeys[i],
                 umrahNum: history.ordinalOf(journeys[i].id),
               ),
-            ),
-    );
+            );
   }
 }
 
@@ -124,7 +121,7 @@ class _JourneyTile extends StatelessWidget {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xFF1B5E20),
+                  backgroundColor: kPrimaryGreen,
                   radius: 22,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -151,7 +148,7 @@ class _JourneyTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          _InfoChip(label: '${dur.inHours}j ${dur.inMinutes.remainder(60)}min'),
+                          _InfoChip(label: fmtDuration(dur)),
                           if (dist > 0) ...[
                             const SizedBox(width: 6),
                             _InfoChip(label: '${dist.toStringAsFixed(2)} km'),
@@ -226,7 +223,7 @@ class _JourneyTile extends StatelessWidget {
               const Text('Edit Masa Perjalanan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.play_arrow, color: Color(0xFF1B5E20)),
+                leading: const Icon(Icons.play_arrow, color: kPrimaryGreen),
                 title: const Text('Masa Mula'),
                 subtitle: Text(_formatDate(newStart)),
                 onTap: () async {
@@ -269,11 +266,16 @@ class _JourneyTile extends StatelessWidget {
                   }
                 },
               ),
+              if (!newEnd.isAfter(newStart))
+                Text('Masa tamat mesti selepas masa mula.',
+                    style: TextStyle(color: Colors.red[700], fontSize: 12)),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () async {
+                  onPressed: !newEnd.isAfter(newStart)
+                      ? null
+                      : () async {
                     await context.read<JourneyHistoryProvider>().updateJourney(
                       record.id,
                       startTime: newStart,
@@ -291,8 +293,7 @@ class _JourneyTile extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime dt) =>
-      '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime dt) => fmtDateTime(dt);
 }
 
 class _InfoChip extends StatelessWidget {
@@ -304,10 +305,10 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B5E20).withValues(alpha: 0.1),
+        color: kPrimaryGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF1B5E20))),
+      child: Text(label, style: const TextStyle(fontSize: 11, color: kPrimaryGreen)),
     );
   }
 }

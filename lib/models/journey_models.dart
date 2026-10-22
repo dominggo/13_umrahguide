@@ -22,22 +22,29 @@ class JourneyPoint {
   final double lng;
   final DateTime timestamp;
 
+  /// True when GPS was lost before this point (no fix for a while), so the
+  /// line from the previous point is not a walked path.
+  final bool gapBefore;
+
   const JourneyPoint({
     required this.lat,
     required this.lng,
     required this.timestamp,
+    this.gapBefore = false,
   });
 
   factory JourneyPoint.fromJson(Map<String, dynamic> json) => JourneyPoint(
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),
         timestamp: DateTime.parse(json['ts'] as String),
+        gapBefore: json['gap'] == true,
       );
 
   Map<String, dynamic> toJson() => {
         'lat': lat,
         'lng': lng,
         'ts': timestamp.toIso8601String(),
+        if (gapBefore) 'gap': true,
       };
 }
 

@@ -4,7 +4,7 @@
 //
 // DATA HIERARCHY (3 levels):
 //
-//   UmrahStep          — one of the 9 main Umrah steps/categories
+//   UmrahStep          — one of the 8 main Umrah steps/categories
 //     └── UmrahSubStep — a named sub-section within a step (e.g. Pusingan 1)
 //           └── DoaItem  — one individual doa/prayer card shown to the user
 //
@@ -1441,3 +1441,40 @@ final List<UmrahStep> umrahSteps = [
     ],
   ),
 ];
+
+// ─── Checkpoint lookup ───────────────────────────────────────────────────────
+
+/// Where the doa that starts a checkpoint lives: its step, its index in the
+/// step's flat doa list (all substeps in order), and the checkpoint name.
+typedef CheckpointStart = ({UmrahStep step, int flatIndex, String name});
+
+Map<int, CheckpointStart>? _checkpointStarts;
+
+Map<int, CheckpointStart> _buildCheckpointStarts() {
+  final map = <int, CheckpointStart>{};
+  for (final step in umrahSteps) {
+    var flatIndex = 0;
+    for (final sub in step.subSteps) {
+      for (final doa in sub.duas) {
+        final n = doa.checkPointStart;
+        if (n != null && !map.containsKey(n)) {
+          map[n] = (
+            step: step,
+            flatIndex: flatIndex,
+            name: doa.checkPointName ?? sub.title,
+          );
+        }
+        flatIndex++;
+      }
+    }
+  }
+  return map;
+}
+
+/// The doa marked `checkPointStart: n`, or null if no doa starts checkpoint n.
+CheckpointStart? checkpointStartLocation(int n) =>
+    (_checkpointStarts ??= _buildCheckpointStarts())[n];
+
+/// Display name of checkpoint [n] (checkPointName or the substep title).
+String checkpointName(int n) =>
+    checkpointStartLocation(n)?.name ?? 'Checkpoint $n';

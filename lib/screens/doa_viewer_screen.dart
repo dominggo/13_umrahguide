@@ -1,17 +1,18 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:provider/provider.dart';
-import '../data/umrah_data.dart';
 import '../models/umrah_step.dart';
 import '../models/audio_provider.dart';
 import '../models/bookmark_provider.dart';
 import '../models/location_provider.dart';
 import '../models/journey_models.dart';
-import '../models/journey_history_provider.dart';
+import '../models/progress_provider.dart';
 import '../services/analytics_service.dart';
+import '../utils/format.dart';
 import 'home_screen.dart';
-import 'umrah_tamat_screen.dart';
+import 'journey_actions.dart';
 
 /// Flat entry combining a substep and one of its duas, for fullStep navigation.
 typedef _FlatEntry = ({UmrahSubStep substep, DoaItem doa});
@@ -57,6 +58,12 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   late PageController _pageCtrl;
   late int _currentIndex;
 
+  late final AudioProvider _audio;
+  StreamSubscription<void>? _trackSub;
+
+  /// Set while auto-play turns the page, so the page change keeps the audio.
+  bool _autoAdvancing = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +83,9 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
         widget.initialIndex.clamp(0, _duas.isEmpty ? 0 : _duas.length - 1);
     _pageCtrl = PageController(initialPage: _currentIndex);
 
+    _audio = context.read<AudioProvider>();
+    _trackSub = _audio.onTrackComplete.listen((_) => _onTrackComplete());
+
     // Record checkpoint start for the initial doa
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -85,6 +95,8 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
   @override
   void dispose() {
+    _trackSub?.cancel();
+    _audio.stop();
     _pageCtrl.dispose();
     super.dispose();
   }
@@ -157,9 +169,47 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
 
   void _onPageChanged(int i) {
     setState(() => _currentIndex = i);
-    context.read<AudioProvider>().stop();
+    if (!_autoAdvancing) _audio.stop();
     _maybeRecordCheckpointStart(i);
   }
+
+  // ── Auto-play ────────────────────────────────────────────────────────────
+
+  /// When a doa's audio ends, turn to the next doa and play it, as long as
+  /// auto-play is on and the next doa is part of the same auto-play group.
+  /// A doa with autoPlay: false is a break-point the user starts by hand, and
+  /// a checkpoint end waits for the user to confirm.
+  Future<void> _onTrackComplete() async {
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    if (!context.read<ProgressProvider>().autoPlayEnabled) return;
+    if (_duas.isEmpty || _showCheckpointEndButton) return;
+    final next = _currentIndex + 1;
+    if (next >= _duas.length) return;
+    final doa = _duas[next];
+    if (!doa.autoPlay || doa.audioPath == null) return;
+    _autoAdvancing = true;
+    try {
+      await _goTo(next);
+    } finally {
+      _autoAdvancing = false;
+    }
+    if (mounted) _audio.play(doa.audioPath!);
+  }
+
+  void _toggleAutoPlay() {
+    final progress = context.read<ProgressProvider>();
+    progress.autoPlayEnabled = !progress.autoPlayEnabled;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(progress.autoPlayEnabled
+            ? 'Main automatik: Hidup — doa seterusnya dimainkan sendiri'
+            : 'Main automatik: Mati'),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  // ── Checkpoints ──────────────────────────────────────────────────────────
 
   /// Records checkPointStart for doa at [index] if journey is active.
   /// Only from the journey flow: the Menu tab has no end button, so a start
@@ -174,10 +224,9 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final substepTitle = widget.fullStep != null && _flatEntries.isNotEmpty
         ? _flatEntries[index].substep.title
         : widget.title;
-    loc.recordCheckpointStart(doa.checkPointStart!, doa.checkPointName ?? substepTitle);
+    loc.recordCheckpointStart(
+        doa.checkPointStart!, doa.checkPointName ?? substepTitle);
   }
-
-  // ── Checkpoint end button handler ────────────────────────────────────────
 
   bool get _showCheckpointEndButton {
     if (!widget.fromJourney) return false;
@@ -191,32 +240,33 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   /// Tapping the checkpoint-end button: show confirmation dialog, then record end
   /// and navigate to next section (substep with checkPointStart == num+1).
   Future<void> _handleCheckpointEnd() async {
-    final doa = _currentDoa;
-    final endNum = doa.checkPointEnd!;
+    final endNum = _currentDoa.checkPointEnd!;
+    final substepName = _currentSubstepTitle;
     final loc = context.read<LocationProvider>();
     if (!loc.isJourneyActive) return;
 
     if (endNum == loc.journeyKind.lastCp) {
-      await loc.recordCheckpointEnd(endNum);
-      if (!mounted) return;
-      await _confirmFinalizeJourney(context, loc);
+      // The last checkpoint ends only once the user confirms finishing.
+      await finishJourney(context, beforeFinalize: () async {
+        await loc.recordCheckpointEnd(endNum);
+        AnalyticsService.logCheckpointCompleted(
+            checkpointNum: endNum, name: substepName);
+      });
       return;
     }
 
-    // Confirm dialog
-    final substepName = _currentSubstepTitle;
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text('Selesai $substepName?'),
         content: Text('Adakah anda telah selesai $substepName?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Tidak')),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Ya')),
         ],
       ),
@@ -227,112 +277,34 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     AnalyticsService.logCheckpointCompleted(
         checkpointNum: endNum, name: substepName);
 
-    // Navigate: find doa with checkPointStart == endNum + 1 in fullStep or umrahSteps
+    // Next section: within this step if it's here, else open its step.
     final nextNum = endNum + 1;
-    if (widget.fullStep != null) {
-      // Try to find within current fullStep
-      for (int fi = 0; fi < _flatEntries.length; fi++) {
-        if (_flatEntries[fi].doa.checkPointStart == nextNum) {
-          await _goTo(fi);
-          return;
-        }
+    for (int fi = 0; fi < _flatEntries.length; fi++) {
+      if (_flatEntries[fi].doa.checkPointStart == nextNum) {
+        await _goTo(fi);
+        return;
       }
     }
-
-    // Search across all umrahSteps
-    for (final step in umrahSteps) {
-      int flatOffset = 0;
-      for (final sub in step.subSteps) {
-        for (int di = 0; di < sub.duas.length; di++) {
-          if (sub.duas[di].checkPointStart == nextNum) {
-            if (!mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DoaViewerScreen(
-                  duas: const [],
-                  initialIndex: flatOffset + di,
-                  title: step.title,
-                  stepId: step.id,
-                  fullStep: step,
-                  fromJourney: true,
-                ),
-              ),
-            );
-            return;
-          }
-          flatOffset++;
-        }
-      }
-    }
+    if (mounted) openCheckpoint(context, nextNum);
   }
 
-  Future<void> _confirmFinalizeJourney(
-      BuildContext ctx, LocationProvider loc) async {
-    final history = ctx.read<JourneyHistoryProvider>();
-    final kindLabel =
-        loc.journeyKind == JourneyKind.wida ? "Tawaf Wida'" : 'Umrah';
-
-    final confirm = await showDialog<bool>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        title: Text('Tamatkan $kindLabel?'),
-        content: Text('Tamatkan $kindLabel? Rekod lengkap akan disimpan.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Tidak'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.green[700]),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Ya, Tamatkan'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    // 1. Finalize journey
-    final record = await loc.finalizeJourney();
-
-    // 2. Save history WITH error handling
-    try {
-      await history.addOrUpdateJourney(record);
-      debugPrint('✓ History saved: ${record.id}');
-    } catch (e) {
-      debugPrint('✗ History save failed: $e');
-      if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text('Gagal simpan rekod: $e')),
-        );
-      }
-      return; // Stop here if save failed
-    }
-
-    // 3. Navigate
-    if (ctx.mounted) {
-      Navigator.of(ctx).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => UmrahTamatScreen(
-            startTime: record.startTime,
-            endTime: record.endTime,
-            gpsTrack: record.gpsTrack,
-            checkpoints: record.checkpoints,
-            journeyId: record.id,
-            kind: record.kind,
-          ),
-        ),
-      );
-    }
+  Future<void> _startFromHere(JourneyKind kind) async {
+    await startJourney(context, kind: kind, openFirstCheckpoint: false);
+    if (mounted) _maybeRecordCheckpointStart(_currentIndex);
   }
+
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final total = _duas.length;
     final bm = context.watch<BookmarkProvider>();
-    final loc = context.watch<LocationProvider>();
+    final autoPlay =
+        context.select<ProgressProvider, bool>((p) => p.autoPlayEnabled);
+    // Only these two values matter here; GPS fixes don't rebuild the page.
+    final journeyActive =
+        context.select<LocationProvider, bool>((l) => l.isJourneyActive);
+    context.select<LocationProvider, JourneyKind>((l) => l.journeyKind);
 
     final currentDoa = total > 0 ? _duas[_currentIndex] : null;
     final curStep = _currentStepId;
@@ -340,6 +312,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
     final bmKey = curStep != null && curSub != null && currentDoa != null
         ? BookmarkProvider.keyFor(curStep, curSub, currentDoa.title)
         : null;
+    final anyAudio = _duas.any((d) => d.audioPath != null);
 
     return Scaffold(
       appBar: AppBar(
@@ -350,6 +323,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back),
+              tooltip: 'Kembali',
               onPressed: () => Navigator.pop(context),
             ),
             IconButton(
@@ -366,10 +340,19 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
           if (widget.fromJourney && _isRoundSubstep)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _RoundStatusIndicator(
-                prefix: _derivedRoundPrefix!,
-                locationProvider: loc,
+              child: Consumer<LocationProvider>(
+                builder: (_, loc, __) => _RoundStatusIndicator(
+                  prefix: _derivedRoundPrefix!,
+                  locationProvider: loc,
+                ),
               ),
+            ),
+          if (anyAudio)
+            IconButton(
+              icon: Icon(
+                  autoPlay ? Icons.playlist_play : Icons.playlist_remove),
+              tooltip: autoPlay ? 'Main automatik: Hidup' : 'Main automatik: Mati',
+              onPressed: _toggleAutoPlay,
             ),
           // Bookmark
           if (bmKey != null)
@@ -380,56 +363,13 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
               tooltip: bm.isBookmarked(bmKey) ? 'Buang Simpanan' : 'Simpan Doa',
               onPressed: () => bm.toggle(bmKey),
             ),
-          // Counter
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Center(
-              child: Text(
-                '${_currentIndex + 1} / $total',
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
-          ),
         ],
       ),
       body: total == 0
           ? const Center(child: Text('Tiada doa'))
           : Column(
               children: [
-                // Page indicator dots
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      total > 10 ? 1 : total,
-                      (i) => total > 10
-                          ? Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 2),
-                              child: Text(
-                                '${_currentIndex + 1}/$total',
-                                style:
-                                    const TextStyle(color: Color(0xFF1B5E20)),
-                              ),
-                            )
-                          : AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.symmetric(horizontal: 3),
-                              width: i == _currentIndex ? 20 : 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(4),
-                                color: i == _currentIndex
-                                    ? const Color(0xFF1B5E20)
-                                    : const Color(0xFF1B5E20)
-                                        .withValues(alpha: 0.3),
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
+                _PageIndicator(index: _currentIndex, total: total),
 
                 // Doa pages
                 Expanded(
@@ -437,9 +377,7 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                     controller: _pageCtrl,
                     itemCount: total,
                     onPageChanged: _onPageChanged,
-                    itemBuilder: (context, index) {
-                      return _DoaPage(doa: _duas[index]);
-                    },
+                    itemBuilder: (context, index) => _DoaPage(doa: _duas[index]),
                   ),
                 ),
 
@@ -457,107 +395,76 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
                         onPrev: () => _goTo(_currentIndex - 1),
                         onNext: () => _goTo(_currentIndex + 1),
                       ),
-                      // Action row
-                      Consumer<LocationProvider>(
-                        builder: (ctx, loc, _) {
-                          final showCpEnd =
-                              _showCheckpointEndButton && loc.isJourneyActive;
-                          final startKind = switch (currentDoa.checkPointStart) {
-                            1 => JourneyKind.umrah,
-                            18 => JourneyKind.wida,
-                            _ => null,
-                          };
-                          final showStart = widget.fromJourney &&
-                              startKind != null &&
-                              !loc.isJourneyActive;
-                          // Menu flow records nothing, so point to the Umrah tab
-                          final showGoToUmrah =
-                              !widget.fromJourney && startKind != null;
-
-                          if (!showCpEnd && !showStart && !showGoToUmrah) {
-                            return const SizedBox.shrink();
-                          }
-
-                          return Container(
-                            color: Colors.white,
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                            child: Row(
-                              children: [
-                                if (showStart)
-                                  Expanded(
-                                    child: FilledButton.icon(
-                                      icon: const Icon(Icons.play_arrow,
-                                          size: 16),
-                                      label: Text(
-                                          startKind == JourneyKind.wida
-                                              ? "Mulakan Tawaf Wida'"
-                                              : 'Mulakan Umrah',
-                                          style:
-                                              const TextStyle(fontSize: 12)),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFF1B5E20),
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                      onPressed: () async {
-                                        if (!loc.gpsAvailable) {
-                                          ScaffoldMessenger.of(ctx)
-                                              .showSnackBar(const SnackBar(
-                                            content: Text(
-                                                'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                                          ));
-                                        }
-                                        await loc.startJourney(kind: startKind);
-                                        AnalyticsService.logJourneyStarted(
-                                            kind: startKind);
-                                        if (mounted) {
-                                          _maybeRecordCheckpointStart(
-                                              _currentIndex);
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                if (showGoToUmrah)
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      icon: const Icon(Icons.directions_walk,
-                                          size: 16),
-                                      label: Text(
-                                          loc.isJourneyActive
-                                              ? 'Sambung di tab Umrah'
-                                              : startKind == JourneyKind.wida
-                                                  ? "Mulakan Tawaf Wida'? Tekan di sini"
-                                                  : 'Mulakan Umrah? Tekan di sini',
-                                          style:
-                                              const TextStyle(fontSize: 12)),
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor:
-                                            const Color(0xFF1B5E20),
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                      onPressed: () {
-                                        HomeScreen.tabRequest.value =
-                                            HomeScreen.umrahTab;
-                                        Navigator.popUntil(
-                                            ctx, (route) => route.isFirst);
-                                      },
-                                    ),
-                                  ),
-                                if (showCpEnd)
-                                  Expanded(
-                                    child:
-                                        _buildCheckpointEndButton(currentDoa),
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                      _buildActionRow(currentDoa, journeyActive),
                     ],
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildActionRow(DoaItem currentDoa, bool journeyActive) {
+    final showCpEnd = _showCheckpointEndButton && journeyActive;
+    final startKind = switch (currentDoa.checkPointStart) {
+      1 => JourneyKind.umrah,
+      18 => JourneyKind.wida,
+      _ => null,
+    };
+    final showStart = widget.fromJourney && startKind != null && !journeyActive;
+    // Menu flow records nothing, so point to the Umrah tab
+    final showGoToUmrah = !widget.fromJourney && startKind != null;
+
+    if (!showCpEnd && !showStart && !showGoToUmrah) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: Row(
+        children: [
+          if (showStart)
+            Expanded(
+              child: FilledButton.icon(
+                icon: const Icon(Icons.play_arrow, size: 16),
+                label: Text(
+                    startKind == JourneyKind.wida
+                        ? "Mulakan Tawaf Wida'"
+                        : 'Mulakan Umrah',
+                    style: const TextStyle(fontSize: 12)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: kPrimaryGreen,
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () => _startFromHere(startKind),
+              ),
+            ),
+          if (showGoToUmrah)
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.directions_walk, size: 16),
+                label: Text(
+                    journeyActive
+                        ? 'Sambung di tab Umrah'
+                        : startKind == JourneyKind.wida
+                            ? "Mulakan Tawaf Wida'? Tekan di sini"
+                            : 'Mulakan Umrah? Tekan di sini',
+                    style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kPrimaryGreen,
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: () {
+                  HomeScreen.tabRequest.value = HomeScreen.umrahTab;
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
+              ),
+            ),
+          if (showCpEnd)
+            Expanded(child: _buildCheckpointEndButton(currentDoa)),
+        ],
+      ),
     );
   }
 
@@ -594,12 +501,72 @@ class _DoaViewerScreenState extends State<DoaViewerScreen> {
   }
 }
 
-class _DoaPage extends StatelessWidget {
+/// Dots for short lists (≤10) plus an "n / total" counter.
+class _PageIndicator extends StatelessWidget {
+  final int index;
+  final int total;
+  const _PageIndicator({required this.index, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      color: kPrimaryGreen.withValues(alpha: 0.08),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (total > 1 && total <= 10)
+            for (int i = 0; i < total; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: i == index ? 20 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: i == index
+                      ? kPrimaryGreen
+                      : kPrimaryGreen.withValues(alpha: 0.3),
+                ),
+              ),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text('${index + 1} / $total',
+                style: const TextStyle(color: kPrimaryGreen, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DoaPage extends StatefulWidget {
   final DoaItem doa;
   const _DoaPage({required this.doa});
 
   @override
+  State<_DoaPage> createState() => _DoaPageState();
+}
+
+class _DoaPageState extends State<_DoaPage> {
+  /// Loaded HTML guides, shared across pages and viewers.
+  static final Map<String, Future<String>> _textCache = {};
+
+  Future<String>? _text;
+
+  @override
+  void initState() {
+    super.initState();
+    final file = widget.doa.textFile;
+    if (file != null) {
+      _text = _textCache.putIfAbsent(
+          file, () => rootBundle.loadString('assets/text/$file'));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final doa = widget.doa;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -610,7 +577,7 @@ class _DoaPage extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1B5E20),
+              color: kPrimaryGreen,
             ),
           ),
           const SizedBox(height: 16),
@@ -667,12 +634,11 @@ class _DoaPage extends StatelessWidget {
               height: 160,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFF1B5E20).withValues(alpha: 0.08),
+                color: kPrimaryGreen.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
-                child:
-                    Icon(Icons.menu_book, size: 64, color: Color(0xFF1B5E20)),
+                child: Icon(Icons.menu_book, size: 64, color: kPrimaryGreen),
               ),
             ),
           if (doa.description != null) ...[
@@ -688,10 +654,10 @@ class _DoaPage extends StatelessWidget {
                   style: const TextStyle(fontSize: 14, height: 1.6)),
             ),
           ],
-          if (doa.textFile != null) ...[
+          if (_text != null) ...[
             const SizedBox(height: 16),
             FutureBuilder<String>(
-              future: rootBundle.loadString('assets/text/${doa.textFile}'),
+              future: _text,
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox.shrink();
                 return Html(data: snapshot.data!);
@@ -742,9 +708,9 @@ class _NavBar extends StatelessWidget {
           // Skip previous
           IconButton.filled(
             icon: const Icon(Icons.skip_previous),
+            tooltip: 'Sebelum',
             style: IconButton.styleFrom(
-              backgroundColor:
-                  canGoPrev ? const Color(0xFF1B5E20) : Colors.grey[300],
+              backgroundColor: canGoPrev ? kPrimaryGreen : Colors.grey[300],
               iconSize: 20,
             ),
             onPressed: canGoPrev ? onPrev : null,
@@ -759,7 +725,7 @@ class _NavBar extends StatelessWidget {
                       label: Text(isPlaying ? 'Berhenti' : 'Dengar Doa'),
                       style: FilledButton.styleFrom(
                         backgroundColor:
-                            isPlaying ? Colors.orange : const Color(0xFF1B5E20),
+                            isPlaying ? Colors.orange : kPrimaryGreen,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 10),
                       ),
@@ -776,9 +742,9 @@ class _NavBar extends StatelessWidget {
           // Skip next
           IconButton.filled(
             icon: const Icon(Icons.skip_next),
+            tooltip: 'Seterusnya',
             style: IconButton.styleFrom(
-              backgroundColor:
-                  canGoNext ? const Color(0xFF1B5E20) : Colors.grey[300],
+              backgroundColor: canGoNext ? kPrimaryGreen : Colors.grey[300],
               iconSize: 20,
             ),
             onPressed: canGoNext ? onNext : null,

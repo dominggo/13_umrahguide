@@ -9,6 +9,8 @@ import 'models/progress_provider.dart';
 import 'models/location_provider.dart';
 import 'models/journey_history_provider.dart';
 import 'screens/splash_screen.dart';
+import 'utils/format.dart';
+import 'utils/map_tile_cache.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,7 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase init failed: $e');
   }
+  await initTileCache();
 
   runApp(const UmrahGuideApp());
 }
@@ -43,12 +46,12 @@ class UmrahGuideApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF1B5E20),
+            seedColor: kPrimaryGreen,
             brightness: Brightness.light,
           ),
           useMaterial3: true,
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1B5E20),
+            backgroundColor: kPrimaryGreen,
             foregroundColor: Colors.white,
             elevation: 0,
           ),

@@ -6,13 +6,21 @@ import '../models/location_provider.dart';
 import '../models/umrah_location.dart';
 import '../models/umrah_step.dart';
 import '../services/analytics_service.dart';
-import 'umrah_tamat_screen.dart';
+import '../utils/format.dart';
 import 'step_detail_screen.dart';
-import 'doa_viewer_screen.dart';
-import '../models/journey_history_provider.dart';
+import 'journey_actions.dart';
 
 class UmrahIniScreen extends StatelessWidget {
   const UmrahIniScreen({super.key});
+
+  // Journey steps: ihram, tawaf, solat_tawaf, saie, tahallul
+  static const _journeyStepIds = {
+    'ihram',
+    'tawaf',
+    'solat_tawaf',
+    'saie',
+    'tahallul'
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -21,16 +29,8 @@ class UmrahIniScreen extends StatelessWidget {
     final isActive = loc.isUmrahActive;
     final isWidaActive = loc.isWidaActive;
 
-    // Journey steps: ihram, tawaf, solat_tawaf, saie, tahallul
-    const journeyStepIds = {
-      'ihram',
-      'tawaf',
-      'solat_tawaf',
-      'saie',
-      'tahallul'
-    };
     final journeySteps =
-        umrahSteps.where((s) => journeyStepIds.contains(s.id)).toList();
+        umrahSteps.where((s) => _journeyStepIds.contains(s.id)).toList();
 
     final missedCps = isActive ? loc.missedCheckpoints : <CheckpointRecord>[];
     final hasMissed = missedCps.isNotEmpty;
@@ -40,9 +40,11 @@ class UmrahIniScreen extends StatelessWidget {
         // 1. Compact GPS row
         _CompactGpsRow(
           gpsAvailable: loc.gpsAvailable,
+          signal: loc.gpsSignal,
           currentZone: currentZone,
           onManualSelect: () => _showManualZoneDialog(context, loc),
         ),
+        if (loc.isJourneyActive) const _ScreenOnBanner(),
 
         // 2. "Mulakan Umrah" button (idle only)
         if (!isActive)
@@ -53,21 +55,9 @@ class UmrahIniScreen extends StatelessWidget {
               label: const Text('Mulakan Umrah'),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
-                backgroundColor: const Color(0xFF1B5E20),
+                backgroundColor: kPrimaryGreen,
               ),
-              onPressed: isWidaActive
-                  ? null
-                  : () async {
-                      if (!loc.gpsAvailable) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                          content: Text(
-                              'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                        ));
-                      }
-                      await loc.startJourney();
-                      AnalyticsService.logJourneyStarted();
-                    },
+              onPressed: isWidaActive ? null : () => startJourney(context),
             ),
           ),
         if (!isActive && isWidaActive)
@@ -94,13 +84,10 @@ class UmrahIniScreen extends StatelessWidget {
                       loc.lastIncompleteCheckpoint != null
                           ? Icons.play_circle_outline
                           : Icons.check_circle_outline,
-                      color: const Color(0xFF1B5E20),
+                      color: kPrimaryGreen,
                     ),
                     title: Text(
-                      (loc.lastIncompleteCheckpoint != null ||
-                              loc.nextUnstartedCheckpoint() != null)
-                          ? 'Sambung Umrah'
-                          : 'Selesai',
+                      _hasRemaining(loc) ? 'Sambung Umrah' : 'Selesai',
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 13),
                     ),
@@ -114,22 +101,12 @@ class UmrahIniScreen extends StatelessWidget {
                 ),
 
               // Missed checkpoints ABOVE progress
-              if (hasMissed) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    'Peringatan Tertinggal',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange),
-                  ),
-                ),
+              if (hasMissed)
                 _MissedCheckpointCard(
                   missedCheckpoints: missedCps,
-                  onReopen: (cp) => _reopenCheckpoint(context, loc, cp),
+                  currentNum: loc.lastIncompleteCheckpoint?.checkpointNum,
+                  onReopen: (cp) => openCheckpoint(context, cp.checkpointNum),
                 ),
-              ],
 
               // Progress header
               const Padding(
@@ -141,40 +118,31 @@ class UmrahIniScreen extends StatelessWidget {
               ),
 
               // 5 journey step tiles — tappable
-              ...journeySteps.asMap().entries.map((entry) {
-                final stepNum = entry.key + 1;
-                final step = entry.value;
-                final isTawaf = step.id == 'tawaf';
-                final isSaie = step.id == 'saie';
-
-                return Padding(
+              for (final (i, step) in journeySteps.indexed)
+                Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Card(
                     margin: EdgeInsets.zero,
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: const Color(0xFF1B5E20),
+                        backgroundColor: kPrimaryGreen,
                         child: Text(
-                          '$stepNum',
+                          '${i + 1}',
                           style: const TextStyle(
                               color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
                       title: Text(step.title,
                           style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: (isTawaf || isSaie)
-                          ? _CheckpointDots(
-                              step: step,
-                              locationProvider: loc,
-                            )
+                      subtitle: (step.id == 'tawaf' || step.id == 'saie')
+                          ? _CheckpointDots(step: step, locationProvider: loc)
                           : Text(step.subtitle,
                               style: const TextStyle(fontSize: 12)),
                       trailing: const Icon(Icons.chevron_right, size: 18),
                       onTap: () => _openStep(context, step),
                     ),
                   ),
-                );
-              }),
+                ),
 
               // Tawaf Wida' — independent of any Umrah journey
               _buildWidaCard(context, loc),
@@ -196,13 +164,17 @@ class UmrahIniScreen extends StatelessWidget {
                   side: const BorderSide(color: Colors.red),
                   minimumSize: const Size.fromHeight(44),
                 ),
-                onPressed: () => _endJourney(context, loc),
+                onPressed: () => finishJourney(context),
               ),
             ),
           ),
       ],
     );
   }
+
+  bool _hasRemaining(LocationProvider loc) =>
+      loc.lastIncompleteCheckpoint != null ||
+      loc.nextUnstartedCheckpoint() != null;
 
   void _openStep(BuildContext context, UmrahStep step) {
     AnalyticsService.logStepViewed(stepId: step.id);
@@ -219,127 +191,15 @@ class UmrahIniScreen extends StatelessWidget {
     if (incomplete != null) return incomplete.name;
     final nextNum = loc.nextUnstartedCheckpoint();
     if (nextNum == null) return 'Semua selesai';
-    for (final step in umrahSteps) {
-      for (final sub in step.subSteps) {
-        for (final doa in sub.duas) {
-          if (doa.checkPointStart == nextNum) {
-            return doa.checkPointName ?? sub.title;
-          }
-        }
-      }
-    }
-    return 'Checkpoint $nextNum';
+    return checkpointName(nextNum);
   }
 
   void _openLastCheckpoint(BuildContext context, LocationProvider loc) {
-    final incomplete = loc.lastIncompleteCheckpoint;
-
-    if (incomplete != null) {
-      _openCheckpointDoa(context, incomplete.checkpointNum);
-      return;
-    }
-
-    // No incomplete checkpoint — find the next unstarted one
-    final nextNum = loc.nextUnstartedCheckpoint();
-    if (nextNum != null) {
-      _openCheckpointDoa(context, nextNum);
-      return;
-    }
-
-    // All checkpoints completed — open the first step of this kind as fallback
-    final fallbackId =
-        loc.journeyKind == JourneyKind.wida ? 'tawaf_wida' : 'ihram';
-    final fallback = umrahSteps.firstWhere((s) => s.id == fallbackId);
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DoaViewerScreen(
-            duas: const [],
-            initialIndex: 0,
-            title: fallback.title,
-            stepId: fallback.id,
-            fullStep: fallback,
-            fromJourney: true,
-          ),
-        ));
-  }
-
-  void _reopenCheckpoint(
-      BuildContext context, LocationProvider loc, CheckpointRecord cp) {
-    _openCheckpointDoa(context, cp.checkpointNum);
-  }
-
-  /// Navigate to the DoaViewerScreen for the doa that has checkPointStart == [cpNum].
-  void _openCheckpointDoa(BuildContext context, int cpNum) {
-    for (final step in umrahSteps) {
-      int flatIndex = 0;
-      for (final sub in step.subSteps) {
-        for (int di = 0; di < sub.duas.length; di++) {
-          if (sub.duas[di].checkPointStart == cpNum) {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DoaViewerScreen(
-                    duas: const [],
-                    initialIndex: flatIndex + di,
-                    title: step.title,
-                    stepId: step.id,
-                    fullStep: step,
-                    fromJourney: true,
-                  ),
-                ));
-            return;
-          }
-        }
-        flatIndex += sub.duas.length;
-      }
-    }
-  }
-
-  Future<void> _endJourney(BuildContext context, LocationProvider loc) async {
-    final history = context.read<JourneyHistoryProvider>();
-    final isWida = loc.journeyKind == JourneyKind.wida;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Tamatkan Perjalanan?'),
-        content: Text(isWida
-            ? "Adakah anda pasti ingin menamatkan Tawaf Wida' ini?"
-            : 'Adakah anda pasti ingin menamatkan perjalanan umrah ini?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Tidak')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Ya, Selesai')),
-        ],
-      ),
-    );
-
-    if (confirm != true || !context.mounted) return;
-
-    final record = await loc.finalizeJourney();
-    await history.addOrUpdateJourney(record);
-    AnalyticsService.logJourneyCompleted(
-        checkpointsCompleted: record.checkpoints.where((c) => c.isCompleted).length,
-        kind: record.kind);
-
-    if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => UmrahTamatScreen(
-            startTime: record.startTime,
-            endTime: record.endTime,
-            gpsTrack: record.gpsTrack,
-            checkpoints: record.checkpoints,
-            journeyId: record.id,
-            kind: record.kind,
-          ),
-        ),
-      );
-    }
+    final num = loc.lastIncompleteCheckpoint?.checkpointNum ??
+        loc.nextUnstartedCheckpoint() ??
+        // All checkpoints completed — open the first one of this kind
+        loc.journeyKind.firstCp;
+    openCheckpoint(context, num);
   }
 
   /// Card for the standalone Tawaf Wida' session. Wida' is not part of an Umrah
@@ -367,7 +227,7 @@ class UmrahIniScreen extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const CircleAvatar(
-                    backgroundColor: Color(0xFF1B5E20),
+                    backgroundColor: kPrimaryGreen,
                     child: Icon(Icons.waving_hand, color: Colors.white, size: 18),
                   ),
                   title: Text(widaStep.title,
@@ -384,12 +244,9 @@ class UmrahIniScreen extends StatelessWidget {
                   ListTile(
                     dense: true,
                     leading: const Icon(Icons.play_circle_outline,
-                        color: Color(0xFF1B5E20)),
+                        color: kPrimaryGreen),
                     title: Text(
-                      (loc.lastIncompleteCheckpoint != null ||
-                              loc.nextUnstartedCheckpoint() != null)
-                          ? "Sambung Tawaf Wida'"
-                          : 'Selesai',
+                      _hasRemaining(loc) ? "Sambung Tawaf Wida'" : 'Selesai',
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 13),
                     ),
@@ -409,7 +266,7 @@ class UmrahIniScreen extends StatelessWidget {
                         side: const BorderSide(color: Colors.red),
                         minimumSize: const Size.fromHeight(40),
                       ),
-                      onPressed: () => _endJourney(context, loc),
+                      onPressed: () => finishJourney(context),
                     ),
                   ),
                 ] else
@@ -423,26 +280,12 @@ class UmrahIniScreen extends StatelessWidget {
                           label: const Text("Mulakan Tawaf Wida'"),
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
-                            backgroundColor: const Color(0xFF1B5E20),
+                            backgroundColor: kPrimaryGreen,
                           ),
                           onPressed: umrahBusy
                               ? null
-                              : () async {
-                                  if (!loc.gpsAvailable) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text(
-                                          'GPS tidak tersedia. Perjalanan direkod tanpa GPS.'),
-                                    ));
-                                  }
-                                  await loc.startJourney(kind: JourneyKind.wida);
-                                  AnalyticsService.logJourneyStarted(
-                                      kind: JourneyKind.wida);
-                                  if (context.mounted) {
-                                    _openCheckpointDoa(
-                                        context, JourneyKind.wida.firstCp);
-                                  }
-                                },
+                              : () => startJourney(context,
+                                  kind: JourneyKind.wida),
                         ),
                         if (umrahBusy)
                           const Padding(
@@ -484,7 +327,7 @@ class UmrahIniScreen extends StatelessWidget {
           }
           final loc = umrahLocations[i - 1];
           return ListTile(
-            leading: const Icon(Icons.place, color: Color(0xFF1B5E20)),
+            leading: const Icon(Icons.place, color: kPrimaryGreen),
             title: Text(loc.nameMalay),
             onTap: () {
               locProv.manualOverrideZone(loc);
@@ -499,41 +342,59 @@ class UmrahIniScreen extends StatelessWidget {
 
 class _CompactGpsRow extends StatelessWidget {
   final bool gpsAvailable;
+  final GpsSignal signal;
   final UmrahLocation? currentZone;
   final VoidCallback onManualSelect;
 
   const _CompactGpsRow({
     required this.gpsAvailable,
+    required this.signal,
     required this.currentZone,
     required this.onManualSelect,
   });
 
   @override
   Widget build(BuildContext context) {
+    final (IconData icon, String label, Color fg, Color bg) =
+        !gpsAvailable
+            ? (Icons.gps_off, 'GPS Tidak Aktif', Colors.grey, Colors.grey[100]!)
+            : switch (signal) {
+                GpsSignal.lost => (
+                    Icons.gps_not_fixed,
+                    'Isyarat GPS hilang',
+                    Colors.orange[800]!,
+                    Colors.orange[50]!,
+                  ),
+                GpsSignal.recovered => (
+                    Icons.gps_fixed,
+                    'GPS disambung semula',
+                    kPrimaryGreen,
+                    const Color(0xFFC8E6C9),
+                  ),
+                GpsSignal.ok => (
+                    Icons.gps_fixed,
+                    'GPS Aktif',
+                    kPrimaryGreen,
+                    const Color(0xFFE8F5E9),
+                  ),
+              };
+
     return Container(
-      color: gpsAvailable ? const Color(0xFFE8F5E9) : Colors.grey[100],
+      color: bg,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
-          Icon(
-            gpsAvailable ? Icons.gps_fixed : Icons.gps_off,
-            size: 14,
-            color: gpsAvailable ? const Color(0xFF1B5E20) : Colors.grey,
-          ),
+          Icon(icon, size: 14, color: fg),
           const SizedBox(width: 6),
-          Text(
-            gpsAvailable ? 'GPS Aktif' : 'GPS Tidak Aktif',
-            style: TextStyle(
-              fontSize: 12,
-              color: gpsAvailable ? const Color(0xFF1B5E20) : Colors.grey,
+          Text(label, style: TextStyle(fontSize: 12, color: fg)),
+          if (currentZone != null)
+            Flexible(
+              child: Text(
+                ' · ${currentZone!.nameMalay}',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: Colors.black54),
+              ),
             ),
-          ),
-          if (currentZone != null) ...[
-            Text(
-              ' · ${currentZone!.nameMalay}',
-              style: const TextStyle(fontSize: 11, color: Colors.black54),
-            ),
-          ],
           const Spacer(),
           TextButton(
             onPressed: onManualSelect,
@@ -543,6 +404,33 @@ class _CompactGpsRow extends StatelessWidget {
               textStyle: const TextStyle(fontSize: 11),
             ),
             child: const Text('Lokasi Manual'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Reminder shown while a session runs: GPS only records with the screen on.
+class _ScreenOnBanner extends StatelessWidget {
+  const _ScreenOnBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFFFF8E1),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: const Row(
+        children: [
+          Icon(Icons.screen_lock_portrait, size: 14, color: Colors.brown),
+          SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              "Jangan kunci skrin atau tutup aplikasi semasa Tawaf dan Sa'ie "
+              '— GPS hanya merekod ketika skrin menyala.',
+              style: TextStyle(fontSize: 11, color: Colors.brown),
+            ),
           ),
         ],
       ),
@@ -560,32 +448,16 @@ class _CheckpointDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Collect all checkPointEnd nums that appear in this step's duas
-    final endNums = <int>[];
-    for (final sub in step.subSteps) {
-      for (final doa in sub.duas) {
-        if (doa.checkPointEnd != null) endNums.add(doa.checkPointEnd!);
-      }
-    }
+    final endNums = <int>[
+      for (final sub in step.subSteps)
+        for (final doa in sub.duas)
+          if (doa.checkPointEnd != null) doa.checkPointEnd!,
+    ];
 
     if (endNums.isEmpty) {
       return Text(step.subtitle, style: const TextStyle(fontSize: 12));
     }
-
-    return Row(
-      children: endNums.map((cpNum) {
-        final completed = locationProvider.isCheckpointCompleted(cpNum);
-        final started = locationProvider.isCheckpointStarted(cpNum);
-        final color = completed
-            ? const Color(0xFF1B5E20)
-            : started
-                ? Colors.orange
-                : Colors.grey[300]!;
-        return Padding(
-          padding: const EdgeInsets.only(right: 4),
-          child: CircleAvatar(backgroundColor: color, radius: 5),
-        );
-      }).toList(),
-    );
+    return _StatusDots(nums: endNums, locationProvider: locationProvider);
   }
 }
 
@@ -596,17 +468,34 @@ class _WidaDots extends StatelessWidget {
   const _WidaDots({required this.locationProvider});
 
   @override
+  Widget build(BuildContext context) => _StatusDots(
+        nums: [
+          for (int cp = JourneyKind.wida.firstCp;
+              cp <= JourneyKind.wida.lastCp;
+              cp++)
+            cp,
+        ],
+        locationProvider: locationProvider,
+      );
+}
+
+/// Green = completed, orange = started, grey = not started.
+class _StatusDots extends StatelessWidget {
+  final List<int> nums;
+  final LocationProvider locationProvider;
+
+  const _StatusDots({required this.nums, required this.locationProvider});
+
+  @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        for (int cp = JourneyKind.wida.firstCp;
-            cp <= JourneyKind.wida.lastCp;
-            cp++)
+        for (final cp in nums)
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: CircleAvatar(
               backgroundColor: locationProvider.isCheckpointCompleted(cp)
-                  ? const Color(0xFF1B5E20)
+                  ? kPrimaryGreen
                   : locationProvider.isCheckpointStarted(cp)
                       ? Colors.orange
                       : Colors.grey[300]!,
@@ -620,43 +509,52 @@ class _WidaDots extends StatelessWidget {
 
 class _MissedCheckpointCard extends StatelessWidget {
   final List<CheckpointRecord> missedCheckpoints;
+
+  /// The in-progress checkpoint; it's not "missed", so it is left out.
+  final int? currentNum;
   final void Function(CheckpointRecord cp) onReopen;
 
   const _MissedCheckpointCard({
     required this.missedCheckpoints,
+    required this.currentNum,
     required this.onReopen,
   });
 
   @override
   Widget build(BuildContext context) {
-    final loc = context.watch<LocationProvider>(); // <-- Get it here
+    final visible =
+        missedCheckpoints.where((cp) => cp.checkpointNum != currentNum).toList();
+    if (visible.isEmpty) return const SizedBox.shrink();
 
-    // Filter first
-    final visibleCheckpoints = missedCheckpoints
-        .where((cp) => cp.name != loc.lastIncompleteCheckpoint?.name)
-        .toList();
-
-    // Hide card if nothing to show after filtering
-    if (visibleCheckpoints.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      color: Colors.orange[50],
-      child: Column(
-        children: visibleCheckpoints
-            .map((cp) => ListTile(
-                  leading:
-                      const Icon(Icons.warning_amber, color: Colors.orange),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'Peringatan Tertinggal',
+            style: TextStyle(
+                fontSize: 15, fontWeight: FontWeight.bold, color: Colors.orange),
+          ),
+        ),
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          color: Colors.orange[50],
+          child: Column(
+            children: [
+              for (final cp in visible)
+                ListTile(
+                  leading: const Icon(Icons.warning_amber, color: Colors.orange),
                   title: Text('${cp.name} belum diselesaikan'),
                   trailing: TextButton(
                     onPressed: () => onReopen(cp),
                     child: const Text('Semula'),
                   ),
-                ))
-            .toList(),
-      ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

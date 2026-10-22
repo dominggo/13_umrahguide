@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart';
 
 class AudioProvider extends ChangeNotifier {
   late AudioPlayer _player;
+  StreamSubscription<PlayerState>? _stateSub;
   String? _currentPath;
   bool _isPlaying = false;
 
@@ -21,7 +22,7 @@ class AudioProvider extends ChangeNotifier {
 
   void _initPlayer() {
     _player = AudioPlayer();
-    _player.playerStateStream.listen((state) {
+    _stateSub = _player.playerStateStream.listen((state) {
       _isPlaying = state.playing;
       if (state.processingState == ProcessingState.completed) {
         _isPlaying = false;
@@ -33,6 +34,7 @@ class AudioProvider extends ChangeNotifier {
   }
 
   Future<void> _reinitAndRecover() async {
+    await _stateSub?.cancel();
     try {
       await _player.stop();
       await _player.dispose();
@@ -58,8 +60,10 @@ class AudioProvider extends ChangeNotifier {
         await _player.play();
       } catch (e2) {
         // give up - clear current path so UI can recover
+        debugPrint('Audio play failed ($assetPath): $e2');
         _currentPath = null;
-        rethrow;
+        _isPlaying = false;
+        notifyListeners();
       }
     }
   }
@@ -77,6 +81,7 @@ class AudioProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _stateSub?.cancel();
     try {
       _player.dispose();
     } catch (_) {}

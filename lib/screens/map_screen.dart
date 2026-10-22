@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_cache/flutter_map_cache.dart';
-import '../utils/map_tile_cache.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../models/location_provider.dart';
 import '../models/umrah_location.dart';
 import '../models/umrah_step.dart';
 import '../data/umrah_data.dart';
+import '../utils/format.dart';
+import '../utils/map_tile_cache.dart';
 import 'doa_viewer_screen.dart';
 
 const _makkahCenter = LatLng(21.4225, 39.8262);
@@ -24,28 +25,18 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuilds on zone/journey changes; the GPS dot and track listen to
+    // locProv.position separately.
     final locProv = context.watch<LocationProvider>();
     final currentZone = locProv.currentZone;
-    final pos = locProv.currentPosition;
 
+    // Title is in HomeScreen's AppBar.
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Peta Masjidil Haram'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            tooltip: 'Lokasi Saya',
-            onPressed: pos != null
-                ? () => _mapCtrl.move(LatLng(pos.latitude, pos.longitude), 18)
-                : null,
-          ),
-        ],
-      ),
       body: Column(
         children: [
           // Status bar
           Container(
-            color: currentZone != null ? const Color(0xFF1B5E20) : Colors.grey[700],
+            color: currentZone != null ? kPrimaryGreen : Colors.grey[700],
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
@@ -59,7 +50,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: Text(
                     currentZone != null
                         ? 'Anda di: ${currentZone.nameMalay}'
-                        : 'Di luar kawasan — pilih lokasi manual',
+                        : 'Di luar kawasan — tekan lama peta untuk pilih lokasi',
                     style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ),
@@ -70,115 +61,134 @@ class _MapScreenState extends State<MapScreen> {
           // Map
           Expanded(
             child: FlutterMap(
-                    mapController: _mapCtrl,
-                    options: MapOptions(
-                      initialCenter: _makkahCenter,
-                      initialZoom: 17,
-                      minZoom: 14,
-                      maxZoom: 19,
-                      onLongPress: (tapPos, point) => _showManualZoneDialog(context, locProv),
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        tileProvider: CachedTileProvider(
-                          store: sharedTileCache,
-                        ),
-                        userAgentPackageName: 'com.example.umrah_guide',
-                      ),
-                      // GPS track (journey)
-                      if (locProv.gpsTrack.length > 1)
-                        PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: locProv.gpsTrack
-                                  .map((p) => LatLng(p.lat, p.lng))
-                                  .toList(),
-                              color: Colors.blue,
-                              strokeWidth: 3,
-                            ),
-                          ],
-                        ),
-                      // Zone polygons (behind markers)
-                      PolygonLayer(
-                        polygons: umrahLocations
-                            .where((l) => l.polygon != null && l.polygon!.isNotEmpty)
-                            .map((loc) {
-                          final isActive = currentZone?.id == loc.id;
-                          return Polygon(
-                            points: loc.polygon!,
-                            color: isActive
-                                ? const Color(0xFF1B5E20).withValues(alpha: 0.2)
-                                : const Color(0xFF388E3C).withValues(alpha: 0.15),
-                            borderColor: isActive ? const Color(0xFF1B5E20) : Colors.green,
-                            borderStrokeWidth: isActive ? 2 : 1,
-                          );
-                        }).toList(),
-                      ),
-                      // Zone markers (for circle-based zones or just centers)
-                      MarkerLayer(
-                        markers: [
-                          ...umrahLocations.where((loc) => loc.center != null).map((loc) {
-                            final isActive = currentZone?.id == loc.id;
-                            return Marker(
-                              point: loc.center!,
-                              width: 48,
-                              height: 48,
-                              child: GestureDetector(
-                                onTap: () => _showZoneBottomSheet(context, loc),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 400),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? const Color(0xFF1B5E20)
-                                        : const Color(0xFF388E3C).withValues(alpha: 0.85),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: isActive ? 3 : 1.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: isActive ? 8 : 4,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(Icons.place, color: Colors.white, size: 24),
-                                ),
-                              ),
-                            );
-                          }),
-                          // GPS blue dot
-                          if (pos != null)
-                            Marker(
-                              point: LatLng(pos.latitude, pos.longitude),
-                              width: 20,
-                              height: 20,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.blue,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
-                                  boxShadow: const [BoxShadow(color: Colors.blue, blurRadius: 10)],
-                                ),
+              mapController: _mapCtrl,
+              options: MapOptions(
+                initialCenter: _makkahCenter,
+                initialZoom: 17,
+                minZoom: 14,
+                maxZoom: 19,
+                onLongPress: (tapPos, point) =>
+                    _showManualZoneDialog(context, locProv),
+              ),
+              children: [
+                osmTileLayer(),
+                // Zone polygons (behind markers)
+                PolygonLayer(
+                  polygons: umrahLocations
+                      .where((l) => l.polygon != null && l.polygon!.isNotEmpty)
+                      .map((loc) {
+                    final isActive = currentZone?.id == loc.id;
+                    return Polygon(
+                      points: loc.polygon!,
+                      color: isActive
+                          ? kPrimaryGreen.withValues(alpha: 0.2)
+                          : const Color(0xFF388E3C).withValues(alpha: 0.15),
+                      borderColor: isActive ? kPrimaryGreen : Colors.green,
+                      borderStrokeWidth: isActive ? 2 : 1,
+                    );
+                  }).toList(),
+                ),
+                // Zone markers (for circle-based zones or just centers)
+                MarkerLayer(
+                  markers: [
+                    for (final loc
+                        in umrahLocations.where((l) => l.center != null))
+                      _zoneMarker(loc, currentZone?.id == loc.id),
+                  ],
+                ),
+                // GPS track (journey) and blue dot, updated on every fix
+                ValueListenableBuilder<Position?>(
+                  valueListenable: locProv.position,
+                  builder: (_, __, ___) =>
+                      locProv.isJourneyActive && locProv.gpsTrack.length > 1
+                          ? trackLayer(locProv.gpsTrack)
+                          : const SizedBox.shrink(),
+                ),
+                ValueListenableBuilder<Position?>(
+                  valueListenable: locProv.position,
+                  builder: (_, pos, __) => pos == null
+                      ? const SizedBox.shrink()
+                      : MarkerLayer(markers: [
+                          Marker(
+                            point: LatLng(pos.latitude, pos.longitude),
+                            width: 20,
+                            height: 20,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 3),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.blue, blurRadius: 10)
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                    ],
-                  ),
+                          ),
+                        ]),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: () => _mapCtrl.move(_makkahCenter, 17),
-        backgroundColor: const Color(0xFF1B5E20),
-        tooltip: 'Kembali ke Masjidil Haram',
-        child: const Icon(Icons.home, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ValueListenableBuilder<Position?>(
+            valueListenable: locProv.position,
+            builder: (_, pos, __) => FloatingActionButton.small(
+              heroTag: 'map_my_location',
+              onPressed: pos != null
+                  ? () =>
+                      _mapCtrl.move(LatLng(pos.latitude, pos.longitude), 18)
+                  : null,
+              backgroundColor: pos != null ? kPrimaryGreen : Colors.grey,
+              tooltip: 'Lokasi Saya',
+              child: const Icon(Icons.my_location, color: Colors.white),
+            ),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton.small(
+            heroTag: 'map_home',
+            onPressed: () => _mapCtrl.move(_makkahCenter, 17),
+            backgroundColor: kPrimaryGreen,
+            tooltip: 'Kembali ke Masjidil Haram',
+            child: const Icon(Icons.home, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
+
+  Marker _zoneMarker(UmrahLocation loc, bool isActive) => Marker(
+        point: loc.center!,
+        width: 48,
+        height: 48,
+        child: GestureDetector(
+          onTap: () => _showZoneBottomSheet(context, loc),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            decoration: BoxDecoration(
+              color: isActive
+                  ? kPrimaryGreen
+                  : const Color(0xFF388E3C).withValues(alpha: 0.85),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: isActive ? 3 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: isActive ? 8 : 4,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.place, color: Colors.white, size: 24),
+          ),
+        ),
+      );
 
   void _showZoneBottomSheet(BuildContext context, UmrahLocation loc) {
     // Find related duas from umrahSteps
@@ -190,9 +200,14 @@ class _MapScreenState extends State<MapScreen> {
           if (loc.substepId != null && sub.id != loc.substepId) {
             continue;
           }
-          final duas = List<DoaItem>.from(sub.duas);
-          for (int i = 0; i < duas.length; i++) {
-            relatedDuas.add(_DoaRef(doa: duas[i], index: i, siblings: duas, substepTitle: sub.title));
+          for (int i = 0; i < sub.duas.length; i++) {
+            relatedDuas.add(_DoaRef(
+                doa: sub.duas[i],
+                index: i,
+                siblings: sub.duas,
+                substepTitle: sub.title,
+                stepId: step.id,
+                substepId: sub.id));
           }
         }
         break;
@@ -204,7 +219,7 @@ class _MapScreenState extends State<MapScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Padding(
+      builder: (sheetCtx) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,28 +227,33 @@ class _MapScreenState extends State<MapScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.place, color: Color(0xFF1B5E20)),
+                const Icon(Icons.place, color: kPrimaryGreen),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     loc.nameMalay,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(loc.description, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            Text(loc.description,
+                style: const TextStyle(color: Colors.grey, fontSize: 13)),
             if (relatedDuas.isNotEmpty) ...[
               const SizedBox(height: 16),
-              const Text('Doa berkaitan:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text('Doa berkaitan:',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               ...relatedDuas.take(5).map((r) => ListTile(
                     dense: true,
-                    leading: const Icon(Icons.menu_book, color: Color(0xFF1B5E20), size: 20),
-                    title: Text(r.doa.title, style: const TextStyle(fontSize: 13)),
+                    leading: const Icon(Icons.menu_book,
+                        color: kPrimaryGreen, size: 20),
+                    title:
+                        Text(r.doa.title, style: const TextStyle(fontSize: 13)),
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pop(sheetCtx);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -241,6 +261,8 @@ class _MapScreenState extends State<MapScreen> {
                             duas: r.siblings,
                             initialIndex: r.index,
                             title: r.substepTitle,
+                            stepId: r.stepId,
+                            substepId: r.substepId,
                           ),
                         ),
                       );
@@ -278,8 +300,9 @@ class _MapScreenState extends State<MapScreen> {
               }
               final loc = umrahLocations[i - 1];
               return ListTile(
-                leading: const Icon(Icons.place, color: Color(0xFF1B5E20)),
-                title: Text(loc.nameMalay, style: const TextStyle(fontSize: 13)),
+                leading: const Icon(Icons.place, color: kPrimaryGreen),
+                title:
+                    Text(loc.nameMalay, style: const TextStyle(fontSize: 13)),
                 onTap: () {
                   locProv.manualOverrideZone(loc);
                   Navigator.pop(ctx);
@@ -298,5 +321,14 @@ class _DoaRef {
   final int index;
   final List<DoaItem> siblings;
   final String substepTitle;
-  const _DoaRef({required this.doa, required this.index, required this.siblings, required this.substepTitle});
+  final String stepId;
+  final String substepId;
+  const _DoaRef({
+    required this.doa,
+    required this.index,
+    required this.siblings,
+    required this.substepTitle,
+    required this.stepId,
+    required this.substepId,
+  });
 }

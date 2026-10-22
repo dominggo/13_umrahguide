@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/umrah_step.dart';
 import 'doa_list_screen.dart';
 import 'doa_viewer_screen.dart';
+import '../utils/format.dart';
 
 class StepDetailScreen extends StatelessWidget {
   final UmrahStep step;
@@ -25,7 +26,7 @@ class StepDetailScreen extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
-            color: const Color(0xFF1B5E20),
+            color: kPrimaryGreen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -153,7 +154,7 @@ class _SubStepTile extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFF1B5E20),
+          backgroundColor: kPrimaryGreen,
           child: Text('$number', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         ),
         title: Text(subStep.title, style: const TextStyle(fontWeight: FontWeight.w600)),

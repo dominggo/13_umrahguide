@@ -1,3 +1,4 @@
+import '../utils/geo.dart';
 import 'journey_models.dart';
 
 class UmrahJourneyRecord {
@@ -28,45 +29,13 @@ class UmrahJourneyRecord {
 
   Duration get totalDuration => endTime.difference(startTime);
 
-  double get totalDistanceKm {
-    if (gpsTrack.length < 2) return 0;
-    double total = 0;
-    for (int i = 1; i < gpsTrack.length; i++) {
-      total += _distanceKm(
-        gpsTrack[i - 1].lat, gpsTrack[i - 1].lng,
-        gpsTrack[i].lat, gpsTrack[i].lng,
-      );
-    }
-    return total;
-  }
+  double get totalDistanceKm => trackDistanceKm(gpsTrack);
 
   /// Checkpoint numbers that were started but not ended (in-progress or missed).
   List<int> get missedCheckpointNums {
     final started = {for (final c in checkpoints) c.checkpointNum};
     final completed = {for (final c in checkpoints) if (c.isCompleted) c.checkpointNum};
     return started.difference(completed).toList()..sort();
-  }
-
-  static double _distanceKm(double lat1, double lng1, double lat2, double lng2) {
-    const r = 6371.0;
-    final dLat = _rad(lat2 - lat1);
-    final dLng = _rad(lng2 - lng1);
-    final a = _sin2(dLat / 2) +
-        _cos(_rad(lat1)) * _cos(_rad(lat2)) * _sin2(dLng / 2);
-    final c = 2 * _asin(_sqrt(a));
-    return r * c;
-  }
-
-  static double _rad(double deg) => deg * 3.141592653589793 / 180;
-  static double _sin2(double x) { final s = _sin(x); return s * s; }
-  static double _sin(double x) => x - x * x * x / 6.0 + x * x * x * x * x / 120.0;
-  static double _cos(double x) => 1 - x * x / 2.0 + x * x * x * x / 24.0;
-  static double _asin(double x) => x + x * x * x / 6.0;
-  static double _sqrt(double x) {
-    if (x <= 0) return 0;
-    double g = x;
-    for (int i = 0; i < 10; i++) { g = (g + x / g) / 2; }
-    return g;
   }
 
   factory UmrahJourneyRecord.fromJson(Map<String, dynamic> json) {

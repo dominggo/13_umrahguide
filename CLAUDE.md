@@ -50,26 +50,30 @@ Use `build.bat` (Windows) as a shortcut for common build tasks.
 **Target:** Android only (Flutter). No web/iOS targets configured.
 
 **State Management:** `MultiProvider` at root (`main.dart`) with 5 providers:
-- `AudioProvider` — wraps `just_audio`; single global audio player. `play(assetPath)` toggles; navigating away calls `stop()`. Emits a track-complete stream used by `DoaViewerScreen` for auto-advance.
+- `AudioProvider` — wraps `just_audio`; single global audio player. `play(assetPath)` toggles; page changes and leaving `DoaViewerScreen` (its `dispose`) call `stop()`. Emits a track-complete stream used by `DoaViewerScreen` for auto-advance.
 - `BookmarkProvider` — bookmark CRUD via `shared_preferences`; key format `{stepId}__{substepId}__{doaTitle}`.
 - `ProgressProvider` — only holds the persisted auto-play toggle (`autoPlayEnabled`); Round progress is NOT stored here — it comes from journey checkpoints in `LocationProvider`.
 - `LocationProvider` — GPS subscription, zone auto-detection against 7 hardcoded Masjidil Haram coordinates, manual zone override, journey GPS/checkpoint recording. One session at a time, of a `JourneyKind`: `umrah` (CP1–17) or `wida` (CP18–24, standalone Tawaf Wida'). Checkpoints outside the active kind's range are ignored, so a Tawaf doa opened during a Wida' session can't write into it.
-- `JourneyHistoryProvider` — CRUD for completed journeys; persisted as JSON at `{appDocDir}/umrah_history.json`.
+  - `notifyListeners()` fires only on zone / GPS-state / journey / checkpoint changes. Every fix goes to the separate `position` `ValueNotifier` (used by the map dot and track), so GPS fixes don't rebuild screens.
+  - Foreground GPS only (no background service). A fix is requested every 2 s with no distance filter, so silence means lost signal. During a journey `gpsSignal` goes `lost` after 30 s without a fix, then `recovered`. A track point after more than 60 s without a fix gets `JourneyPoint.gapBefore` (JSON `gap`); the gap is excluded from distance and drawn dashed. Fixes with accuracy over 50 m are not recorded.
+  - The stream restarts on app resume and when location services come back. The screen is kept on (`wakelock_plus`) while a journey is active.
+  - Track file writes (`umrah_cur.json`) are queued so they never overlap.
+- `JourneyHistoryProvider` — CRUD for completed journeys; persisted as JSON at `{appDocDir}/umrah_history.json` (atomic tmp+rename writes). If the file can't be parsed it is renamed to `umrah_history.corrupt-<ms>.json` so a later save can't overwrite it.
 
 **Navigation flow:**
 ```
-SplashScreen (3 s auto-nav)
-  └── HomeScreen (NavigationBar, 4 tabs)
-        ├── Tab 0: Menu — grid of 9 UmrahStep cards
+SplashScreen (~1.2 s auto-nav)
+  └── HomeScreen (NavigationBar, 4 tabs in an IndexedStack; AppBar title per tab — tabs have no AppBar of their own)
+        ├── Tab 0: Menu — grid of 8 UmrahStep cards
         │     └── StepDetailScreen → DoaListScreen (doa thumbnails)
         │           └── DoaViewerScreen (PageView + audio + round indicator + checkpoint buttons)
         ├── Tab 1: Umrah — UmrahIniScreen (checkpoint-based journey; GPS tracking;
         │     separate "Tawaf Wida'" card = independent Wida' session, CP18–24)
         │     ├── StepDetailScreen (fromJourney: true) → DoaViewerScreen (flat navigation)
-        │     └── End journey → UmrahTamatScreen (map + timeline + PNG/PDF export)
+        │     └── End journey → UmrahTamatScreen pushed above Home (map + timeline + PNG/PDF export)
         ├── Tab 2: Sejarah — UmrahAllScreen (list of completed journeys)
         │     └── UmrahTamatScreen (view past journey)
-        └── Tab 3: Peta — MapScreen (offline OSM + GPS dot + zone markers)
+        └── Tab 3: Peta — MapScreen (OSM with disk tile cache + GPS dot + zone markers)
 
 AppBar actions (all tabs):
   - Search icon → UmrahSearchDelegate (search across all duas)
@@ -81,13 +85,30 @@ AppBar actions (all tabs):
 
 **Journey vs browsing:** `DoaViewerScreen` records checkpoint starts and shows the start/end buttons only when opened with `fromJourney: true` (Umrah tab flow). From the Menu tab, search or bookmarks it records nothing; a niat doa there shows "Mulakan Umrah? Tekan di sini" (or "Sambung di tab Umrah" while a session runs), which sets `HomeScreen.tabRequest` and pops to Home on the Umrah tab.
 
-**Auto-play groups:** `DoaViewerScreen` groups consecutive `DoaItem`s where `autoPlay: true` and auto-advances through them; items with `autoPlay: false` act as manual break-points requiring user tap.
+**Journey flows** live in `lib/screens/journey_actions.dart`:
+- `startJourney` shows a "no GPS" snackbar if needed, logs analytics, shows the one-time keep-screen-on notice (pref `hide_screen_on_notice`) and opens the first checkpoint.
+- `finishJourney` asks to confirm, then finalizes, saves to history, logs analytics and opens `UmrahTamatScreen` with `pushAndRemoveUntil(isFirst)`.
+- `openCheckpoint` opens a checkpoint's doa.
+
+Use these flows rather than duplicating them. Checkpoint lookups use `checkpointStartLocation(n)` / `checkpointName(n)` from `umrah_data.dart`.
+
+**Auto-play groups:** `DoaViewerScreen` listens to `AudioProvider.onTrackComplete`. If `ProgressProvider.autoPlayEnabled` is on (toggle in the viewer AppBar), it turns to the next doa and plays it. It stops before a doa with `autoPlay: false` (a manual break-point), a doa with no audio, or a checkpoint-end doa (waits for the user to confirm).
+
+**Shared utils:**
+- `lib/utils/format.dart` — `kPrimaryGreen`, `fmtTime`, `fmtDateTime`, `fmtDuration`.
+- `lib/utils/geo.dart` — distance, gap-aware `trackDistanceKm` and `trackSegments`.
+- `lib/utils/map_tile_cache.dart` — disk tile cache (`initTileCache()` runs in `main`), `osmTileLayer()` and `trackLayer()`.
+
+**PDF/PNG export:**
+- The PDF uses the bundled `assets/fonts/Nunito-*.ttf`, so it works offline. Don't go back to `PdfGoogleFonts`.
+- The PNG is captured with `captureFromLongWidget` from a non-scrolling summary, without the map.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `lib/data/umrah_data.dart` | All 9 Umrah steps with substeps & duas — edit content here |
+| `lib/data/umrah_data.dart` | All 8 Umrah steps with substeps & duas — edit content here; also checkpoint lookup helpers |
+| `lib/screens/journey_actions.dart` | Shared start / finish / open-checkpoint journey flows |
 | `lib/models/umrah_step.dart` | `UmrahStep`, `UmrahSubStep`, `DoaItem` data classes |
 | `lib/models/audio_provider.dart` | Global audio state + track-complete stream |
 | `lib/models/progress_provider.dart` | Auto-play toggle only |
@@ -100,7 +121,9 @@ AppBar actions (all tabs):
 | `lib/screens/umrah_all_screen.dart` | Tab 2 — list of completed journey records; opens UmrahTamatScreen (`UmrahAllScreen`) |
 | `lib/screens/umrah_tamat_screen.dart` | Journey summary with OSM map, checkpoint timeline, PNG/PDF export (`UmrahTamatScreen`) |
 | `lib/screens/map_screen.dart` | Tab 3 — offline OSM map with GPS overlay and zone markers (`MapScreen`) |
-| `lib/utils/map_tile_cache.dart` | Shared in-memory OSM tile cache (singleton) |
+| `lib/utils/map_tile_cache.dart` | Shared disk OSM tile cache + `osmTileLayer()` / `trackLayer()` |
+| `lib/utils/geo.dart` | Distance and gap-aware track helpers |
+| `lib/utils/format.dart` | Primary colour const and date/duration formatters |
 
 ## Google Play Status (2026-10-20)
 

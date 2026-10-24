@@ -1,4 +1,4 @@
-# Play closed test: status and hand-off (2026-10-20)
+# Play closed test: status and hand-off (updated 2026-10-24)
 
 Written on MUKA (Surface) so the work can continue from another PC. Complements `docs/play_release_guide.md`.
 
@@ -6,7 +6,8 @@ Written on MUKA (Surface) so the work can continue from another PC. Complements 
 
 | Item | State (checked 2026-10-20) |
 |------|----------------------------|
-| App | Panduan Umrah, package `com.faeq.umrahmas`, release `1.1.0+3` |
+| App | Panduan Umrah, package `com.faeq.umrahmas`. Alpha track still has `1.1.0+3`. **`1.2.0+4` is built and tested on a real phone (2026-10-24) but NOT yet uploaded** (check Alpha > Releases to confirm) |
+| New bundle | `build/app/outputs/bundle/release/app-release.aab`, 85.0 MB, 1.2.0+4. Gitignored; rebuild with `flutter build appbundle --release` (~10 min on `P:`) if missing. `flutter analyze` clean, 14 tests pass |
 | Review | **Passed.** Publishing overview shows "Last published on October 19, 2026" (no "in review" banner); Dashboard ticks "Publish a closed testing release" |
 | Closed track | "Closed testing - Alpha", release name `tadika`, active, 5 countries (MY, ID, SG, SA, TH) |
 | Tester list | `closed1`, 15 Gmail accounts (the addresses live only in Play Console, see below) |
@@ -59,8 +60,18 @@ A bilingual (Malay then English) draft named "Jemputan uji Panduan Umrah (Androi
 
 ## Next steps
 
-1. [ ] Send the invite email (Bcc the 15 testers). Not sent as of 2026-10-20.
-2. [ ] Watch Dashboard > "N testers currently opted-in" weekly; add testers to `closed1` if it falls near 12.
-3. [ ] When 12+ have been opted in for 14 consecutive days, Dashboard > **Apply for production access** (answer the questions about the closed test).
-4. [ ] Submit a production release (build number above 3; upload the `.aab` by hand, 88.7 MB is too big for browser automation).
-5. [ ] Then the other open items in `mine-proxmox` `docs/todo.md` under "Umrah Guide" (Firebase/AD_ID decision, icon set, screenshots, keystore backup).
+Decision (2026-10-24): upload 1.2.0+4 to Alpha first, then send invites without waiting for its review. The 14-day clock counts opted-in testers, not app version, so testers auto-updating from +3 to +4 stay opted in.
+
+1. [ ] Upload `app-release.aab` by hand to Alpha (Create new release; the file picker step is manual, 85 MB is too big for browser automation). Release notes (Malay): "Versi 1.2.0: auto-main doa berturutan, penjejakan GPS lebih stabil (skrin kekal hidup semasa perjalanan), eksport PDF tanpa internet, dan pelbagai pembaikan." Send to review.
+2. [ ] Edit the Gmail invite draft: add a line that the app may update itself during the test (fine, stay opted in), and ask testers to try GPS tracking and auto-play as well as the umrah and wida' flows.
+3. [ ] Send the invite email (Bcc the 15 testers; addresses only in Play Console `closed1`). Not sent as of 2026-10-24.
+4. [ ] Check Dashboard "N testers currently opted-in" on day 2 and day 7; add testers to `closed1` if below 12 (keep a buffer of 3+).
+5. [ ] When 12+ have been opted in for 14 consecutive days, Dashboard > **Apply for production access** (answer the questions about the closed test).
+6. [ ] Submit a production release (build number above 4; manual `.aab` upload).
+7. [ ] Then the other open items in `mine-proxmox` `docs/todo.md` under "Umrah Guide" (Firebase/AD_ID decision, icon set, screenshots, keystore backup).
+
+## Notes for continuing in Claude in Chrome
+
+- Use `/console/u/1/` URLs only. Claude must not accept Play terms on the user's behalf.
+- Gmail draft: search Drafts for "Jemputan uji Panduan Umrah"; recipients are blank.
+- Do not record tester addresses in this repo.

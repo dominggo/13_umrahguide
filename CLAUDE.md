@@ -127,12 +127,12 @@ Use these flows rather than duplicating them. Checkpoint lookups use `checkpoint
 
 ## Google Play Status (2026-10-24)
 
-**Update 2026-10-24:** 1.2.0+4 is tested on a real phone and the release bundle is built (85.0 MB), and it was **uploaded to Alpha and submitted for review on 2026-10-24** (release "4 (1.2.0)"; 1.1.0+3 stays live until approval, review typically up to 7 days). The invite email was sent on 2026-10-24 to all 15 testers, without waiting for the review (the 14-day clock counts opted-in testers, not app version). Steps are in `docs/play_closed_test_handoff.md`.
+**Update 2026-10-24:** 1.2.0+4 is tested on a real phone and the release bundle is built (85.0 MB), and it was **uploaded to Alpha, passed review and went live to testers on 2026-10-24 12:43 (release "4 (1.2.0)", "Available to selected testers")**. The invite email was sent on 2026-10-24 to all 15 testers, without waiting for the review (the 14-day clock counts opted-in testers, not app version). Steps are in `docs/play_closed_test_handoff.md`.
 
 **Update 2026-10-20:** the review passed and the closed test is live, but **0 testers have opted in yet**. Opt-in links, console URLs (use `/console/u/1/`), what to do next and the invite email are in `docs/play_closed_test_handoff.md`.
 
 - Personal developer account: production is locked until a closed test has run with at least 12 testers opted in for 14 consecutive days. Open testing is locked too.
-- Closed testing "Alpha": release `1.1.0+3`, tester list `closed1` (15 testers), countries MY, ID, SG, SA, TH (Brunei is not offered by Play). 14 changes were submitted for review on 2026-10-19; pre-review checks passed and Play Console showed "Your changes are now in review" the same day (Google review takes about 7 days; check Publishing overview).
+- Closed testing "Alpha": release `1.2.0+4` (was `1.1.0+3` until 2026-10-24), tester list `closed1` (15 testers), countries MY, ID, SG, SA, TH (Brunei is not offered by Play). 14 changes were submitted for review on 2026-10-19; pre-review checks passed and Play Console showed "Your changes are now in review" the same day (Google review takes about 7 days; check Publishing overview).
 - Privacy policy URL on Play is pinned to commit `1690ff0` of `docs/PRIVACY_POLICY.md` on GitHub (`dominggo/13_umrahguide`); keep that commit reachable and update the URL in Play Console when the policy changes.
 - Data safety: collected App interactions + Device or other IDs for Analytics (Firebase), not shared; advertising ID declared as used for Analytics.
 - The Play bundle is 88.7 MB, so the browser upload tool cannot send it; upload `build/app/outputs/bundle/release/app-release.aab` manually in Play Console.

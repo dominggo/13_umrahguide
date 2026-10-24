@@ -6,7 +6,7 @@ Written on MUKA (Surface) so the work can continue from another PC. Complements 
 
 | Item | State (checked 2026-10-20) |
 |------|----------------------------|
-| App | Panduan Umrah, package `com.faeq.umrahmas`. Alpha track serves `1.1.0+3` until review ends. **`1.2.0+4` was tested on a real phone, uploaded to Alpha and submitted for review on 2026-10-24** (release "4 (1.2.0)", Publishing overview shows "Changes in review"; check it did not bounce after the quick checks) |
+| App | Panduan Umrah, package `com.faeq.umrahmas`. Alpha track serves **`1.2.0+4`** (tested on a real phone, uploaded and live to testers 2026-10-24 12:43; release "4 (1.2.0)", "Available to selected testers", the Console showed "App update published", no review delay) |
 | New bundle | `build/app/outputs/bundle/release/app-release.aab`, 85.0 MB, 1.2.0+4. Gitignored; rebuild with `flutter build appbundle --release` (~10 min on `P:`) if missing. `flutter analyze` clean, 14 tests pass |
 | Review | **Passed.** Publishing overview shows "Last published on October 19, 2026" (no "in review" banner); Dashboard ticks "Publish a closed testing release" |
 | Closed track | "Closed testing - Alpha", release name `tadika`, active, 5 countries (MY, ID, SG, SA, TH) |

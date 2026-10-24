@@ -6,7 +6,7 @@ Written on MUKA (Surface) so the work can continue from another PC. Complements 
 
 | Item | State (checked 2026-10-20) |
 |------|----------------------------|
-| App | Panduan Umrah, package `com.faeq.umrahmas`. Alpha track still has `1.1.0+3`. **`1.2.0+4` is built and tested on a real phone (2026-10-24) but NOT yet uploaded** (check Alpha > Releases to confirm) |
+| App | Panduan Umrah, package `com.faeq.umrahmas`. Alpha track serves `1.1.0+3` until review ends. **`1.2.0+4` was tested on a real phone, uploaded to Alpha and submitted for review on 2026-10-24** (release "4 (1.2.0)", Publishing overview shows "Changes in review"; check it did not bounce after the quick checks) |
 | New bundle | `build/app/outputs/bundle/release/app-release.aab`, 85.0 MB, 1.2.0+4. Gitignored; rebuild with `flutter build appbundle --release` (~10 min on `P:`) if missing. `flutter analyze` clean, 14 tests pass |
 | Review | **Passed.** Publishing overview shows "Last published on October 19, 2026" (no "in review" banner); Dashboard ticks "Publish a closed testing release" |
 | Closed track | "Closed testing - Alpha", release name `tadika`, active, 5 countries (MY, ID, SG, SA, TH) |
@@ -62,8 +62,8 @@ A bilingual (Malay then English) draft named "Jemputan uji Panduan Umrah (Androi
 
 Decision (2026-10-24): upload 1.2.0+4 to Alpha first, then send invites without waiting for its review. The 14-day clock counts opted-in testers, not app version, so testers auto-updating from +3 to +4 stay opted in.
 
-1. [ ] Upload `app-release.aab` by hand to Alpha (Create new release; the file picker step is manual, 85 MB is too big for browser automation). Release notes (Malay): "Versi 1.2.0: auto-main doa berturutan, penjejakan GPS lebih stabil (skrin kekal hidup semasa perjalanan), eksport PDF tanpa internet, dan pelbagai pembaikan." Send to review.
-2. [ ] Edit the Gmail invite draft: add a line that the app may update itself during the test (fine, stay opted in), and ask testers to try GPS tracking and auto-play as well as the umrah and wida' flows.
+1. [x] DONE 2026-10-24 (uploaded via Claude in Chrome, submitted for review): upload `app-release.aab` by hand to Alpha (Create new release; the file picker step is manual, 85 MB is too big for browser automation). Release notes (Malay): "Versi 1.2.0: auto-main doa berturutan, penjejakan GPS lebih stabil (skrin kekal hidup semasa perjalanan), eksport PDF tanpa internet, dan pelbagai pembaikan." Send to review.
+2. [x] DONE 2026-10-24 (draft rewritten with clean links, recipients still blank): edit the Gmail invite draft: add a line that the app may update itself during the test (fine, stay opted in), and ask testers to try GPS tracking and auto-play as well as the umrah and wida' flows.
 3. [ ] Send the invite email (Bcc the 15 testers; addresses only in Play Console `closed1`). Not sent as of 2026-10-24.
 4. [ ] Check Dashboard "N testers currently opted-in" on day 2 and day 7; add testers to `closed1` if below 12 (keep a buffer of 3+).
 5. [ ] When 12+ have been opted in for 14 consecutive days, Dashboard > **Apply for production access** (answer the questions about the closed test).

@@ -127,7 +127,7 @@ Use these flows rather than duplicating them. Checkpoint lookups use `checkpoint
 
 ## Google Play Status (2026-10-24)
 
-**Update 2026-10-24:** 1.2.0+4 is tested on a real phone and the release bundle is built (85.0 MB), but it is **not yet uploaded**: the Alpha track still holds 1.1.0+3 and the invite email is not sent. Plan: upload +4 to Alpha, then send invites without waiting for its review (the 14-day clock counts opted-in testers, not app version). Steps are in `docs/play_closed_test_handoff.md`.
+**Update 2026-10-24:** 1.2.0+4 is tested on a real phone and the release bundle is built (85.0 MB), and it was **uploaded to Alpha and submitted for review on 2026-10-24** (release "4 (1.2.0)"; 1.1.0+3 stays live until approval, review typically up to 7 days). The invite email is ready as a Gmail draft but not sent. Send invites without waiting for the review (the 14-day clock counts opted-in testers, not app version). Steps are in `docs/play_closed_test_handoff.md`.
 
 **Update 2026-10-20:** the review passed and the closed test is live, but **0 testers have opted in yet**. Opt-in links, console URLs (use `/console/u/1/`), what to do next and the invite email are in `docs/play_closed_test_handoff.md`.
 

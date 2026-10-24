@@ -64,7 +64,7 @@ Decision (2026-10-24): upload 1.2.0+4 to Alpha first, then send invites without 
 
 1. [x] DONE 2026-10-24 (uploaded via Claude in Chrome, submitted for review): upload `app-release.aab` by hand to Alpha (Create new release; the file picker step is manual, 85 MB is too big for browser automation). Release notes (Malay): "Versi 1.2.0: auto-main doa berturutan, penjejakan GPS lebih stabil (skrin kekal hidup semasa perjalanan), eksport PDF tanpa internet, dan pelbagai pembaikan." Send to review.
 2. [x] DONE 2026-10-24 (draft rewritten with clean links, recipients still blank): edit the Gmail invite draft: add a line that the app may update itself during the test (fine, stay opted in), and ask testers to try GPS tracking and auto-play as well as the umrah and wida' flows.
-3. [ ] Send the invite email (Bcc the 15 testers; addresses only in Play Console `closed1`). Not sent as of 2026-10-24.
+3. [x] DONE 2026-10-24 (user sent it, 15 addresses in Bcc, including dominggo@gmail.com). The Dashboard still showed 0 opted-in just before sending.
 4. [ ] Check Dashboard "N testers currently opted-in" on day 2 and day 7; add testers to `closed1` if below 12 (keep a buffer of 3+).
 5. [ ] When 12+ have been opted in for 14 consecutive days, Dashboard > **Apply for production access** (answer the questions about the closed test).
 6. [ ] Submit a production release (build number above 4; manual `.aab` upload).

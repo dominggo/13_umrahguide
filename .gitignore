@@ -86,3 +86,7 @@ android/app/*.keystore
 # Local handoff notes (may contain tester email addresses)
 docs/play_closed_test_handoff.md
 docs/play_closed_test_testers.md
+
+# Firebase / GA service-account key (secret)
+docs/panduan-umrah-faeq-*.json
+*-faeq-*.json

@@ -8,9 +8,9 @@ Drop your PNG files there and rebuild — icons appear automatically. If a file 
 
 ## Step Card Icons
 
-Shown in the 3×3 grid on the Menu tab. Displayed at **40×40 px** inside a coloured header bar.
+Shown in the 2-column grid of 8 cards on the Menu tab, at **64×64 px** inside an 80 px coloured header bar. `step_tawaf.png` is also used at 72×72 px in the green welcome banner at the top of the Menu tab.
 
-**Recommended source size:** 80×80 px or larger (square, transparent background)
+**Current files:** 256×256 px RGBA. Recommended source size: 128×128 px or larger (square, transparent background)
 
 | Filename | Step |
 |---|---|
@@ -31,7 +31,7 @@ Shown in the 3×3 grid on the Menu tab. Displayed at **40×40 px** inside a colo
 
 Shown in the nav bar at the bottom of the screen. Displayed at **24×24 px**.
 
-**Recommended source size:** 48×48 px or larger (square, transparent background)
+**Current files:** 256×256 px RGBA. Recommended source size: 48×48 px or larger (square, transparent background)
 
 Each tab has two versions: unselected and selected (active).
 
@@ -55,7 +55,7 @@ Each tab has two versions: unselected and selected (active).
 Shown centred on the green splash screen inside a white rounded card.
 
 **Displayed size:** 72×72 px inside a 120×120 white card
-**Recommended source size:** 256×256 px (square, solid colour works best against white background)
+**Current file:** 256×256 px RGB, opaque (solid colour works best against the white card)
 
 | Filename | Used for |
 |---|---|
@@ -65,7 +65,7 @@ Shown centred on the green splash screen inside a white rounded card.
 
 ## App Launcher Icon (Android)
 
-These are the icons shown on the Android home screen and app drawer. Replace each file directly — keep the exact filename `ic_launcher.png`.
+These are the icons shown on the Android home screen and app drawer (legacy PNG mipmaps; there is no adaptive icon). Replace each file directly — keep the exact filename `ic_launcher.png`. The release and debug builds use the same icon.
 
 | Folder | Required size |
 |---|---|
@@ -103,6 +103,8 @@ for dpi, px in sizes.items():
 
 - [ ] PNG format, transparent background (except launcher icons which should be opaque)
 - [ ] Square aspect ratio
-- [ ] File placed in `assets/images/custom_icons/` (or mipmap folders for launcher)
+- [ ] File placed in `assets/images/custom_icons/` (or mipmap folders for launcher). Sub-folders are not bundled: `assets/images/custom_icons/unused/` holds spare candidates (`ic_4.png`...) that the app does not load
 - [ ] Exact filename match (case-sensitive on Linux/Android)
-- [ ] Run `flutter pub get` then `flutter run` or `flutter build apk --release`
+- [ ] Rebuild (`flutter run` or `flutter build apk --release`); the files are Flutter assets, so a hot reload is not enough
+
+The folder also contains `README.txt` with the same list; it is bundled into the app too, so keep it short or delete it and rely on this guide.

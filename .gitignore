@@ -82,3 +82,7 @@ windows/flutter/generated_plugins.cmake
 android/key.properties
 android/app/*.jks
 android/app/*.keystore
+
+# Local handoff notes (may contain tester email addresses)
+docs/play_closed_test_handoff.md
+docs/play_closed_test_testers.md

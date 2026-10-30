@@ -127,6 +127,8 @@ Use these flows rather than duplicating them. Checkpoint lookups use `checkpoint
 
 ## Google Play Status (2026-10-25)
 
+**Update 2026-10-30:** the Dashboard shows **12 testers opted in, 4 days continuous** (needs 14, so "Apply for production" unlocks about 2026-11-09 if the count never drops below 12; Batch 3 invite still unsent, would add buffer). The console only loads under `/console/u/1/` (`/u/0/` redirects to developer signup: do not create an account). Unused `assets/images/icons/` was removed (smaller bundle in the next build; bump the build number above 4).
+
 **Update 2026-10-25:** the tester list `closed1` now has **52 addresses** (Batch 1: 15, invited 2026-10-24; Batch 2: 8 and Batch 3: 29, added 2026-10-25; Batch 2 invited 2026-10-25, **Batch 3 invite not sent yet**). The opted-in count was 0 on the Dashboard before the first invites, so recheck it on day 2 and day 7. Status, opt-in links, console URLs, the invite email and the tester addresses are all in `docs/play_closed_test_handoff.md`. **That file is gitignored (local only, never commit it); copy it by hand to another PC.** Build and upload steps are in `docs/play_release_guide.md`.
 
 - Personal developer account: production is locked until a closed test has run with at least 12 testers opted in for 14 consecutive days. Open testing is locked too.

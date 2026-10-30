@@ -43,7 +43,6 @@ flutter:
 
   assets:
     - assets/images/doa/
-    - assets/images/icons/
     - assets/images/overview/
     - assets/images/locations/
     - assets/images/misc/

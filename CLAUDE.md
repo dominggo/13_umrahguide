@@ -129,6 +129,8 @@ Use these flows rather than duplicating them. Checkpoint lookups use `checkpoint
 
 ## Google Play Status (2026-10-25)
 
+**Update 2026-11-10:** the 14-day closed test requirement was met and **production access has been applied for** (questionnaire on closed test, app and readiness submitted). Google typically replies within about 7 days; until approved, production stays locked and the Alpha track stays live. Next: when approved, bump the build above 4, build the `.aab`, create the production release and upload it by hand. Still pending: trader status by 2027-02-01.
+
 **Update 2026-11-08:** the Dashboard says **12 testers opted in for 13 days continuously**; "Apply for production" is still greyed out and should unlock 2026-11-09. GA4 (`python tools/ga_summary.py --days 16`) shows 13 installs, all on 2026-10-24/25, so the real opted-in count is probably 12–13 (zero margin). Play also asks to **declare trader status by 2027-02-01**.
 
 **Update 2026-10-30:** the Dashboard shows **12 testers opted in, 4 days continuous** (needs 14, so "Apply for production" unlocks about 2026-11-09 if the count never drops below 12; Batch 3 invite still unsent, would add buffer). The console only loads under `/console/u/1/` (`/u/0/` redirects to developer signup: do not create an account). Unused `assets/images/icons/` was removed (smaller bundle in the next build; bump the build number above 4).

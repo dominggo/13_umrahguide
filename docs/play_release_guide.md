@@ -57,7 +57,7 @@ Then github.com/dominggo/13_umrahguide/releases > Draft a new release > pick the
 
 - Production and open testing are locked until a closed test has at least 12 testers opted in for 14 consecutive days.
 - Tester list `closed1` has 52 addresses (see the local `play_closed_test_testers.md`); each must open the opt-in link and stay opted in.
-- After day 14: Dashboard > apply for production access, then create a production release with a higher version code.
+- After day 14: Dashboard > apply for production access (done 2026-11-10; Google answers in about 7 days), then create a production release with a higher version code once approved.
 
 ## 7. Declarations currently on file
 

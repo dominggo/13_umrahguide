@@ -129,7 +129,7 @@ Use these flows rather than duplicating them. Checkpoint lookups use `checkpoint
 
 ## Google Play Status (2026-10-25)
 
-**Update 2026-11-13:** **production access was GRANTED** (Dashboard: "granted Google Play production access"; Production track still Inactive). Build bumped to `1.2.0+5`. The same day release `1.2.0+5` was uploaded by hand and **submitted for review** (full rollout; countries MY, ID, SG, SA, TH; release notes en-US + ms-MY; Managed publishing on). Next: check Publishing overview for approval or issues (Google review typically up to 7 days), then verify the live listing. The next release needs build 6 or higher.
+**Update 2026-11-13:** **production access was GRANTED** (Dashboard: "granted Google Play production access"; Production track still Inactive). Build bumped to `1.2.0+5`. The same day release `1.2.0+5` was uploaded by hand, approved and **published: LIVE on Google Play** (full rollout; countries MY, ID, SG, SA, TH; release notes en-US + ms-MY; Managed publishing on, so each future release needs "Publish changes" in Publishing overview after approval; Production track Active, public listing loads). The Dashboard recommends edge-to-edge handling and R8 optimization for a later build. The next release needs build 6 or higher.
 
 **Update 2026-11-10:** the 14-day closed test requirement was met and **production access has been applied for** (questionnaire on closed test, app and readiness submitted). Trader status was declared (done, confirmed 2026-11-13).
 

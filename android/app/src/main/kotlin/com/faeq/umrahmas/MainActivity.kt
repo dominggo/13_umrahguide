@@ -1,12 +1,7 @@
 package com.faeq.umrahmas
 
-import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
 import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity : FlutterActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
-    }
-}
+// Edge-to-edge is enabled from Dart (SystemChrome.setEnabledSystemUIMode in main.dart).
+// androidx.activity.enableEdgeToEdge() needs a ComponentActivity, which FlutterActivity is not.
+class MainActivity : FlutterActivity()
